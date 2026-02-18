@@ -1,16 +1,117 @@
 """
-Pydantic schemas for API request/response validation
+Pydantic schemas for GovGrants Hub API.
+
+Schemas are different from models. Models define the database tables.
+Schemas define what data looks like when it travels through the API,
+either coming in from a request or going out in a response.
+
+The pattern we follow throughout this file is:
+- Base: the shared fields between create and response
+- Create: what we expect when someone creates a record
+- Update: what we accept when someone edits a record, all fields optional
+- Response: what we send back, includes id and timestamps
+
+This pattern keeps things clean and makes it easy to control exactly
+what data is exposed through the API versus what stays internal.
 """
+
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Any, Dict
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
-# ============= Category Schemas =============
+# State schemas
+
+class StateBase(BaseModel):
+    code: str = Field(..., max_length=5)
+    name: str = Field(..., max_length=100)
+    is_active: bool = True
+
+
+class StateCreate(StateBase):
+    pass
+
+
+class StateResponse(StateBase):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Source schemas
+# Sources are the websites and APIs that the scrapers pull from.
+# We expose limited fields here because most source management
+# is done through the admin interface, not the public API.
+
+class SourceBase(BaseModel):
+    name: str = Field(..., max_length=255)
+    url: str = Field(..., max_length=1000)
+    state_id: Optional[int] = None
+    scraper_type: str = Field(..., max_length=50)
+    scrape_frequency_hours: int = 24
+    is_active: bool = True
+
+
+class SourceCreate(SourceBase):
+    pass
+
+
+class SourceUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=255)
+    url: Optional[str] = Field(None, max_length=1000)
+    scrape_frequency_hours: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
+class SourceResponse(SourceBase):
+    id: int
+    last_scraped_at: Optional[datetime] = None
+    last_success_at: Optional[datetime] = None
+    consecutive_failures: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Agency schemas
+
+class AgencyBase(BaseModel):
+    code: str = Field(..., max_length=20)
+    name: str = Field(..., max_length=255)
+    description: Optional[str] = None
+    website_url: Optional[str] = Field(None, max_length=1000)
+    level: str = Field("federal", max_length=20)
+    state_id: Optional[int] = None
+
+
+class AgencyCreate(AgencyBase):
+    pass
+
+
+class AgencyUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = None
+    website_url: Optional[str] = Field(None, max_length=1000)
+    level: Optional[str] = Field(None, max_length=20)
+
+
+class AgencyResponse(AgencyBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Category schemas
+
 class CategoryBase(BaseModel):
     name: str = Field(..., max_length=100)
     slug: str = Field(..., max_length=100)
     description: Optional[str] = None
+    display_order: int = 0
     parent_id: Optional[int] = None
 
 
@@ -22,48 +123,24 @@ class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=100)
     slug: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = None
+    display_order: Optional[int] = None
     parent_id: Optional[int] = None
 
 
-class Category(CategoryBase):
+class CategoryResponse(CategoryBase):
     id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
-# ============= Agency Schemas =============
-class AgencyBase(BaseModel):
-    code: str = Field(..., max_length=20)
-    name: str = Field(..., max_length=255)
-    description: Optional[str] = None
-    website_url: Optional[str] = Field(None, max_length=500)
+# Applicant type schemas
 
-
-class AgencyCreate(AgencyBase):
-    pass
-
-
-class AgencyUpdate(BaseModel):
-    code: Optional[str] = Field(None, max_length=20)
-    name: Optional[str] = Field(None, max_length=255)
-    description: Optional[str] = None
-    website_url: Optional[str] = Field(None, max_length=500)
-
-
-class Agency(AgencyBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-    
-    model_config = ConfigDict(from_attributes=True)
-
-
-# ============= Applicant Type Schemas =============
 class ApplicantTypeBase(BaseModel):
     name: str = Field(..., max_length=100)
-    code: str = Field(..., max_length=20)
+    code: str = Field(..., max_length=30)
     description: Optional[str] = None
+    is_individual: bool = False
 
 
 class ApplicantTypeCreate(ApplicantTypeBase):
@@ -72,125 +149,163 @@ class ApplicantTypeCreate(ApplicantTypeBase):
 
 class ApplicantTypeUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=100)
-    code: Optional[str] = Field(None, max_length=20)
     description: Optional[str] = None
+    is_individual: Optional[bool] = None
 
 
-class ApplicantType(ApplicantTypeBase):
+class ApplicantTypeResponse(ApplicantTypeBase):
     id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
-# ============= Grant Document Schemas =============
-class GrantDocumentBase(BaseModel):
+# Opportunity document schemas
+
+class OpportunityDocumentBase(BaseModel):
     title: str = Field(..., max_length=255)
     document_type: str = Field(..., max_length=50)
-    file_url: str = Field(..., max_length=500)
+    file_url: str = Field(..., max_length=1000)
     file_size: Optional[int] = None
 
 
-class GrantDocumentCreate(GrantDocumentBase):
-    grant_id: int
+class OpportunityDocumentCreate(OpportunityDocumentBase):
+    opportunity_id: int
 
 
-class GrantDocument(GrantDocumentBase):
+class OpportunityDocumentResponse(OpportunityDocumentBase):
     id: int
-    grant_id: int
+    opportunity_id: int
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
-# ============= Grant Schemas =============
-class GrantBase(BaseModel):
-    opportunity_number: str = Field(..., max_length=50)
+# Opportunity schemas
+# These are the most important schemas in the file.
+# The Opportunity model is the core of the platform.
+
+class OpportunityBase(BaseModel):
+    # opportunity_number is optional because state sources do not have one
+    opportunity_number: Optional[str] = Field(None, max_length=100)
     title: str = Field(..., max_length=500)
-    description: str
-    agency_id: int
-    grant_type: str
-    status: str = "posted"
-    award_floor: Optional[float] = None
-    award_ceiling: Optional[float] = None
-    estimated_total_funding: Optional[float] = None
-    expected_number_of_awards: Optional[int] = None
-    posted_date: Optional[datetime] = None
-    close_date: Optional[datetime] = None
-    archive_date: Optional[datetime] = None
-    expected_award_date: Optional[datetime] = None
-    cfda_number: Optional[str] = Field(None, max_length=20)
-    cost_sharing: bool = False
+    description: Optional[str] = None
+    summary: Optional[str] = Field(None, max_length=1000)
+
+    opportunity_type: str = "grant"
+
+    source_id: Optional[int] = None
+    agency_id: Optional[int] = None
+    state_id: Optional[int] = None
+
+    # who can apply
+    eligibility_individual: bool = False
+    eligibility_organization: bool = False
     eligibility_description: Optional[str] = None
-    application_url: Optional[str] = Field(None, max_length=500)
-    grantor_contact_email: Optional[str] = Field(None, max_length=255)
-    grantor_contact_name: Optional[str] = Field(None, max_length=255)
-    grantor_contact_phone: Optional[str] = Field(None, max_length=50)
+
+    # financial details
+    award_min: Optional[float] = None
+    award_max: Optional[float] = None
+    total_funding: Optional[float] = None
+    expected_awards: Optional[int] = None
+
+    # dates
+    posted_date: Optional[datetime] = None
+    deadline: Optional[datetime] = None
+    expected_award_date: Optional[datetime] = None
+
+    # the link that the Apply button will point to
+    application_url: Optional[str] = Field(None, max_length=1000)
+
+    # contact info
+    contact_name: Optional[str] = Field(None, max_length=255)
+    contact_email: Optional[str] = Field(None, max_length=255)
+    contact_phone: Optional[str] = Field(None, max_length=50)
+
+    # federal records only
+    cfda_number: Optional[str] = Field(None, max_length=20)
 
 
-class GrantCreate(GrantBase):
+class OpportunityCreate(OpportunityBase):
+    # when creating through the API we accept category and applicant type IDs
     category_ids: Optional[List[int]] = []
-    eligible_applicant_ids: Optional[List[int]] = []
+    applicant_type_ids: Optional[List[int]] = []
 
 
-class GrantUpdate(BaseModel):
+class OpportunityUpdate(BaseModel):
+    # every field is optional here so we can do partial updates
     title: Optional[str] = Field(None, max_length=500)
     description: Optional[str] = None
+    summary: Optional[str] = Field(None, max_length=1000)
+    opportunity_type: Optional[str] = None
     agency_id: Optional[int] = None
-    grant_type: Optional[str] = None
-    status: Optional[str] = None
-    award_floor: Optional[float] = None
-    award_ceiling: Optional[float] = None
-    estimated_total_funding: Optional[float] = None
-    expected_number_of_awards: Optional[int] = None
-    posted_date: Optional[datetime] = None
-    close_date: Optional[datetime] = None
-    archive_date: Optional[datetime] = None
-    expected_award_date: Optional[datetime] = None
-    cfda_number: Optional[str] = Field(None, max_length=20)
-    cost_sharing: Optional[bool] = None
+    state_id: Optional[int] = None
+    eligibility_individual: Optional[bool] = None
+    eligibility_organization: Optional[bool] = None
     eligibility_description: Optional[str] = None
-    application_url: Optional[str] = Field(None, max_length=500)
-    grantor_contact_email: Optional[str] = Field(None, max_length=255)
-    grantor_contact_name: Optional[str] = Field(None, max_length=255)
-    grantor_contact_phone: Optional[str] = Field(None, max_length=50)
+    award_min: Optional[float] = None
+    award_max: Optional[float] = None
+    total_funding: Optional[float] = None
+    posted_date: Optional[datetime] = None
+    deadline: Optional[datetime] = None
+    expected_award_date: Optional[datetime] = None
+    application_url: Optional[str] = Field(None, max_length=1000)
+    contact_name: Optional[str] = Field(None, max_length=255)
+    contact_email: Optional[str] = Field(None, max_length=255)
+    contact_phone: Optional[str] = Field(None, max_length=50)
+    status: Optional[str] = None
     category_ids: Optional[List[int]] = None
-    eligible_applicant_ids: Optional[List[int]] = None
+    applicant_type_ids: Optional[List[int]] = None
 
 
-class Grant(GrantBase):
+class OpportunityResponse(OpportunityBase):
+    # this is what we send back when someone requests a full opportunity detail
     id: int
+    status: str
+    data_quality_score: Optional[float] = None
+    classification_confidence: Optional[float] = None
+    last_verified_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     last_synced_at: Optional[datetime] = None
-    agency: Agency
-    categories: List[Category] = []
-    eligible_applicants: List[ApplicantType] = []
-    documents: List[GrantDocument] = []
-    
+
+    agency: Optional[AgencyResponse] = None
+    state: Optional[StateResponse] = None
+    categories: List[CategoryResponse] = []
+    eligible_applicants: List[ApplicantTypeResponse] = []
+    documents: List[OpportunityDocumentResponse] = []
+
     model_config = ConfigDict(from_attributes=True)
 
 
-class GrantListItem(BaseModel):
-    """Simplified grant schema for list views"""
+class OpportunityListItem(BaseModel):
+    # a lighter version of OpportunityResponse used in search results
+    # we do not need to send the full description in a list view
     id: int
-    opportunity_number: str
     title: str
-    agency: Agency
-    grant_type: str
+    opportunity_type: str
     status: str
-    award_ceiling: Optional[float] = None
-    close_date: Optional[datetime] = None
-    categories: List[Category] = []
-    
+    eligibility_individual: bool
+    eligibility_organization: bool
+    award_min: Optional[float] = None
+    award_max: Optional[float] = None
+    deadline: Optional[datetime] = None
+    application_url: Optional[str] = None
+    agency: Optional[AgencyResponse] = None
+    state: Optional[StateResponse] = None
+    categories: List[CategoryResponse] = []
+
     model_config = ConfigDict(from_attributes=True)
 
 
-# ============= User Schemas =============
+# User schemas
+
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
-    organization: Optional[str] = None
+    user_type: str = Field("individual", max_length=20)
+    organization_name: Optional[str] = None
+    organization_type: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -200,17 +315,19 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
-    organization: Optional[str] = None
+    organization_name: Optional[str] = None
+    organization_type: Optional[str] = None
     password: Optional[str] = Field(None, min_length=8)
+    preferences: Optional[Dict[str, Any]] = None
 
 
-class User(UserBase):
+class UserResponse(UserBase):
     id: int
     is_active: bool
     is_admin: bool
     created_at: datetime
     last_login: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -219,29 +336,33 @@ class UserLogin(BaseModel):
     password: str
 
 
-# ============= Saved Grant Schemas =============
-class SavedGrantBase(BaseModel):
-    grant_id: int
+# Saved opportunity schemas
+
+class SavedOpportunityBase(BaseModel):
+    opportunity_id: int
     notes: Optional[str] = None
 
 
-class SavedGrantCreate(SavedGrantBase):
+class SavedOpportunityCreate(SavedOpportunityBase):
     pass
 
 
-class SavedGrant(SavedGrantBase):
+class SavedOpportunityResponse(SavedOpportunityBase):
     id: int
     user_id: int
     created_at: datetime
-    grant: GrantListItem
-    
+    opportunity: OpportunityListItem
+
     model_config = ConfigDict(from_attributes=True)
 
 
-# ============= Saved Search Schemas =============
+# Saved search schemas
+# search_criteria is stored as a dict here, not a JSON string.
+# Storing it as a proper dict is cleaner and avoids double-serialization issues.
+
 class SavedSearchBase(BaseModel):
     name: str = Field(..., max_length=255)
-    search_criteria: str  # JSON string
+    search_criteria: Dict[str, Any]
     notify_on_new_results: bool = True
 
 
@@ -251,53 +372,118 @@ class SavedSearchCreate(SavedSearchBase):
 
 class SavedSearchUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=255)
-    search_criteria: Optional[str] = None
+    search_criteria: Optional[Dict[str, Any]] = None
     notify_on_new_results: Optional[bool] = None
 
 
-class SavedSearch(SavedSearchBase):
+class SavedSearchResponse(SavedSearchBase):
     id: int
     user_id: int
     created_at: datetime
     updated_at: datetime
     last_notified_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
-# ============= Filter/Query Schemas =============
-class GrantFilterParams(BaseModel):
-    """Query parameters for filtering grants"""
-    search: Optional[str] = Field(None, description="Search in title and description")
-    agency_id: Optional[int] = None
+# Review queue schemas
+# These are used by admin users who review low-confidence pipeline records.
+
+class ReviewQueueResponse(BaseModel):
+    id: int
+    opportunity_id: int
+    reason: str
+    review_status: str
+    assigned_to: Optional[int] = None
+    reviewer_notes: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    created_at: datetime
+    opportunity: OpportunityListItem
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ReviewQueueUpdate(BaseModel):
+    review_status: str
+    reviewer_notes: Optional[str] = None
+
+
+# Scrape log schemas
+# Read-only, these are only ever created by the pipeline, never through the API.
+
+class ScrapeLogResponse(BaseModel):
+    id: int
+    source_id: int
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    records_found: int
+    records_added: int
+    records_updated: int
+    records_failed: int
+    run_status: str
+    error_message: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Filter and search schemas
+# This is what users send when they search for opportunities.
+
+class OpportunityFilterParams(BaseModel):
+    # text search across title and description
+    search: Optional[str] = None
+
+    # filter by type of opportunity
+    opportunity_type: Optional[str] = None
+
+    # filter by which state the opportunity is in
+    state_id: Optional[int] = None
+    state_code: Optional[str] = None
+
+    # filter by category
     category_ids: Optional[List[int]] = None
+
+    # filter by who can apply
+    eligibility_individual: Optional[bool] = None
+    eligibility_organization: Optional[bool] = None
+
+    # filter by which agency is offering it
+    agency_id: Optional[int] = None
+
+    # filter by applicant type
     applicant_type_ids: Optional[List[int]] = None
-    grant_type: Optional[str] = None
-    status: Optional[str] = None
+
+    # filter by amount
     min_amount: Optional[float] = None
     max_amount: Optional[float] = None
+
+    # only show opportunities whose deadline is within this many days
     closing_within_days: Optional[int] = None
-    cost_sharing: Optional[bool] = None
-    
-    # Pagination
+
+    # filter by status
+    status: Optional[str] = None
+
+    # pagination
     page: int = Field(1, ge=1)
     page_size: int = Field(20, ge=1, le=100)
-    
-    # Sorting
-    sort_by: Optional[str] = Field("close_date", description="Field to sort by")
+
+    # sorting
+    sort_by: Optional[str] = Field("deadline", description="deadline, posted_date, award_max, title")
     sort_order: Optional[str] = Field("asc", pattern="^(asc|desc)$")
 
 
-class PaginatedResponse(BaseModel):
-    """Generic paginated response"""
+class PaginatedOpportunityResponse(BaseModel):
+    # wraps a list of opportunities with pagination metadata
     total: int
     page: int
     page_size: int
     total_pages: int
-    data: List[GrantListItem]
+    data: List[OpportunityListItem]
 
 
-# ============= Token Schema =============
+# Auth token schemas
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
