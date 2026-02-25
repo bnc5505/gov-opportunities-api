@@ -4,29 +4,18 @@ Database configuration and session management for GovGrants Hub.
 This file sets up the connection to the database and provides
 helper functions for initializing tables and seeding reference data.
 
-We support both SQLite for local development and PostgreSQL for Azure production.
-The DATABASE_URL environment variable controls which one gets used.
+Updated to work with Runwei-aligned schema.
 """
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
-import os
-from dotenv import load_dotenv
+from config import settings
 
-load_dotenv()
+# Read the database connection string from Key Vault or .env fallback
+DATABASE_URL = settings.database_url
 
-# Read the database connection string from the environment.
-# If not set, default to a local SQLite file for development.
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite:///./gov_grants.db"
-)
-
-# Create the database engine.
-# For SQLite we need check_same_thread=False because FastAPI uses multiple threads.
-# For PostgreSQL we use connection pooling to handle multiple requests efficiently.
-
+# Create the database engine
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         DATABASE_URL,
@@ -42,8 +31,7 @@ else:
         max_overflow=20
     )
 
-# SessionLocal is a factory that creates database sessions.
-# Each request to the API gets its own session through the get_db function.
+# SessionLocal is a factory that creates database sessions
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -51,12 +39,6 @@ def get_db() -> Generator[Session, None, None]:
     """
     Provides a database session to API route handlers.
     The session is automatically closed after the request finishes.
-    
-    This is used as a FastAPI dependency like this:
-    
-    @app.get("/opportunities/")
-    def get_opportunities(db: Session = Depends(get_db)):
-        return db.query(Opportunity).all()
     """
     db = SessionLocal()
     try:
@@ -67,274 +49,259 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db():
     """
-    Creates all database tables based on the models defined in models.py.
-    This reads the model definitions and generates the corresponding SQL
-    CREATE TABLE statements, then runs them against the database.
+    Creates all database tables based on the Runwei-aligned models.
     
-    Only run this on a fresh database. If tables already exist, use
-    Alembic migrations instead to avoid losing data.
+    WARNING: This drops all existing tables first!
+    Only run this on fresh database or when you want to reset everything.
     """
     from models import Base
+    from sqlalchemy import text
+    
+    print("⚠️  WARNING: This will drop all existing tables!")
+    print("Dropping existing tables...")
+    
+    # For PostgreSQL, we need to use CASCADE to drop tables with dependencies
+    with engine.connect() as conn:
+        if not DATABASE_URL.startswith("sqlite"):
+            # PostgreSQL: Drop schema and recreate (cleanest approach)
+            print("  Dropping all tables with CASCADE...")
+            conn.execute(text("DROP SCHEMA public CASCADE"))
+            conn.execute(text("CREATE SCHEMA public"))
+            conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
+            conn.commit()
+        else:
+            # SQLite: Can just drop normally
+            Base.metadata.drop_all(bind=engine)
+    
+    print("Creating new tables with Runwei-aligned schema...")
     Base.metadata.create_all(bind=engine)
-    print("Database tables created")
+    print("✓ Database tables created successfully")
 
 
 def seed_initial_data():
     """
-    Populates the database with reference data that the application needs.
-    This includes the four pilot states, the 12 opportunity categories,
-    federal agencies, and applicant types.
+    Populates the database with reference data.
     
-    This function is safe to run multiple times. It checks if data already
-    exists before inserting anything, so you will not get duplicates.
+    Runwei-aligned version includes:
+    - 4 pilot states (PA, NY, MD, DC)
+    - Key government agencies with logos
+    - Initial data sources for scraping
     """
-    from models import State, Agency, Category, ApplicantType
+    from models import State, Agency, Source
     
     db = SessionLocal()
     
     try:
-        # Check if we already ran this. If agencies exist, assume everything is seeded.
-        if db.query(Agency).count() > 0:
+        # Check if already seeded
+        if db.query(State).count() > 0:
             print("Database already contains reference data, skipping seed")
             return
         
-        # Seed the four pilot states
+        print("\nSeeding reference data...")
+        
+        # ============================================================================
+        # STATES
+        # ============================================================================
+        print("  Adding states...")
         states = [
-            State(code="PA", name="Pennsylvania", is_active=True),
-            State(code="NY", name="New York", is_active=True),
-            State(code="MD", name="Maryland", is_active=True),
-            State(code="DC", name="Washington DC", is_active=True),
+            State(code="PA", name="Pennsylvania"),
+            State(code="NY", name="New York"),
+            State(code="MD", name="Maryland"),
+            State(code="DC", name="Washington DC"),
         ]
         db.add_all(states)
         db.flush()
         
-        # Seed federal agencies that we know we will encounter
+        # Get state IDs for foreign keys
+        dc_state = db.query(State).filter(State.code == "DC").first()
+        pa_state = db.query(State).filter(State.code == "PA").first()
+        ny_state = db.query(State).filter(State.code == "NY").first()
+        md_state = db.query(State).filter(State.code == "MD").first()
+        
+        # ============================================================================
+        # AGENCIES
+        # ============================================================================
+        print("  Adding agencies...")
         agencies = [
+            # DC Agencies
             Agency(
-                code="HHS", 
+                code="OVSJG",
+                name="Office of Victim Services and Justice Grants",
+                level="local",
+                state_id=dc_state.id,
+                website_url="https://ovsjg.dc.gov",
+                logo_url="https://ovsjg.dc.gov/sites/default/files/dc/sites/ovsjg/logo.png"
+            ),
+            Agency(
+                code="DSLBD",
+                name="DC Department of Small and Local Business Development",
+                level="local",
+                state_id=dc_state.id,
+                website_url="https://dslbd.dc.gov",
+                logo_url=None  # Will be added when found
+            ),
+            
+            # Pennsylvania Agencies
+            Agency(
+                code="PA-DCED",
+                name="PA Department of Community and Economic Development",
+                level="state",
+                state_id=pa_state.id,
+                website_url="https://dced.pa.gov",
+                logo_url=None
+            ),
+            
+            # New York Agencies
+            Agency(
+                code="NY-ESD",
+                name="Empire State Development",
+                level="state",
+                state_id=ny_state.id,
+                website_url="https://esd.ny.gov",
+                logo_url=None
+            ),
+            
+            # Maryland Agencies
+            Agency(
+                code="MD-COMMERCE",
+                name="Maryland Department of Commerce",
+                level="state",
+                state_id=md_state.id,
+                website_url="https://commerce.maryland.gov",
+                logo_url=None
+            ),
+            
+            # Federal Agencies (common across all states)
+            Agency(
+                code="HHS",
                 name="Department of Health and Human Services",
                 level="federal",
-                website_url="https://www.hhs.gov"
+                website_url="https://www.hhs.gov",
+                logo_url=None
             ),
             Agency(
-                code="ED", 
+                code="ED",
                 name="Department of Education",
                 level="federal",
-                website_url="https://www.ed.gov"
+                website_url="https://www.ed.gov",
+                logo_url=None
             ),
             Agency(
-                code="NSF", 
+                code="NSF",
                 name="National Science Foundation",
                 level="federal",
-                website_url="https://www.nsf.gov"
+                website_url="https://www.nsf.gov",
+                logo_url=None
             ),
             Agency(
-                code="USDA", 
-                name="Department of Agriculture",
+                code="SBA",
+                name="Small Business Administration",
                 level="federal",
-                website_url="https://www.usda.gov"
-            ),
-            Agency(
-                code="DOE", 
-                name="Department of Energy",
-                level="federal",
-                website_url="https://www.energy.gov"
-            ),
-            Agency(
-                code="EPA", 
-                name="Environmental Protection Agency",
-                level="federal",
-                website_url="https://www.epa.gov"
-            ),
-            Agency(
-                code="NIH", 
-                name="National Institutes of Health",
-                level="federal",
-                website_url="https://www.nih.gov"
-            ),
-            Agency(
-                code="NEA", 
-                name="National Endowment for the Arts",
-                level="federal",
-                website_url="https://www.arts.gov"
-            ),
-            Agency(
-                code="NEH", 
-                name="National Endowment for the Humanities",
-                level="federal",
-                website_url="https://www.neh.gov"
-            ),
-            Agency(
-                code="DOJ", 
-                name="Department of Justice",
-                level="federal",
-                website_url="https://www.justice.gov"
+                website_url="https://www.sba.gov",
+                logo_url=None
             ),
         ]
         db.add_all(agencies)
         db.flush()
         
-        # Seed the 12 opportunity categories from the project charter
-        categories = [
-            Category(
-                name="Research and Innovation",
-                slug="research-innovation",
-                description="Scientific research, medical studies, technology development",
-                display_order=1
-            ),
-            Category(
-                name="Small Business and Entrepreneurship",
-                slug="small-business",
-                description="Startup funding, minority business support, rural businesses",
-                display_order=2
-            ),
-            Category(
-                name="Economic and Community Development",
-                slug="economic-development",
-                description="Infrastructure, job creation, business districts",
-                display_order=3
-            ),
-            Category(
-                name="Education and Academic Funding",
-                slug="education",
-                description="Scholarships, school programs, STEM education",
-                display_order=4
-            ),
-            Category(
-                name="Nonprofit and Social Services",
-                slug="nonprofit",
-                description="Community programs, food security, housing",
-                display_order=5
-            ),
-            Category(
-                name="Healthcare and Public Health",
-                slug="healthcare",
-                description="Hospitals, clinics, disease prevention, mental health",
-                display_order=6
-            ),
-            Category(
-                name="Technology and Digital Infrastructure",
-                slug="technology",
-                description="Broadband, cybersecurity, smart cities",
-                display_order=7
-            ),
-            Category(
-                name="Environment and Sustainability",
-                slug="environment",
-                description="Climate action, renewable energy, conservation",
-                display_order=8
-            ),
-            Category(
-                name="Arts, Culture and Humanities",
-                slug="arts-culture",
-                description="Museums, historic preservation, creative programs",
-                display_order=9
-            ),
-            Category(
-                name="Agriculture and Rural Development",
-                slug="agriculture",
-                description="Farm support, rural broadband, food systems",
-                display_order=10
-            ),
-            Category(
-                name="Workforce and Employment",
-                slug="workforce",
-                description="Job training, apprenticeships, career services",
-                display_order=11
-            ),
-            Category(
-                name="Disaster Relief and Emergency",
-                slug="disaster-relief",
-                description="Recovery funding, emergency preparedness",
-                display_order=12
-            ),
-        ]
-        db.add_all(categories)
-        db.flush()
+        # Get agency IDs for sources
+        ovsjg = db.query(Agency).filter(Agency.code == "OVSJG").first()
         
-        # Seed applicant types
-        # These cover both individual and organizational applicants
-        applicant_types = [
-            ApplicantType(
-                code="IND",
-                name="Individuals",
-                description="Individual people applying for personal funding",
-                is_individual=True
+        # ============================================================================
+        # SOURCES (Scraping endpoints)
+        # ============================================================================
+        print("  Adding data sources...")
+        sources = [
+            # DC Sources
+            Source(
+                name="DC OVSJG Current Funding Opportunities",
+                url="https://ovsjg.dc.gov/page/funding-opportunities-current",
+                state_id=dc_state.id,
+                scraper_type="pdf",
+                scrape_frequency_hours=24,
+                is_active=True
             ),
-            ApplicantType(
-                code="SMB",
-                name="Small Businesses",
-                description="Small business enterprises and startups",
-                is_individual=False
+            Source(
+                name="DC Small Business Grants",
+                url="https://dslbd.dc.gov/page/grant-programs",
+                state_id=dc_state.id,
+                scraper_type="html",
+                scrape_frequency_hours=24,
+                is_active=True
             ),
-            ApplicantType(
-                code="NPO",
-                name="Nonprofits",
-                description="501(c)(3) organizations and NGOs",
-                is_individual=False
+            
+            # Pennsylvania Sources
+            Source(
+                name="Pennsylvania DCED Programs",
+                url="https://dced.pa.gov/programs/",
+                state_id=pa_state.id,
+                scraper_type="html",
+                scrape_frequency_hours=24,
+                is_active=True
             ),
-            ApplicantType(
-                code="EDU",
-                name="Educational Institutions",
-                description="Schools, colleges, universities",
-                is_individual=False
+            
+            # New York Sources
+            Source(
+                name="New York ESD Funding Opportunities",
+                url="https://esd.ny.gov/doing-business-ny/funding-opportunities",
+                state_id=ny_state.id,
+                scraper_type="html",
+                scrape_frequency_hours=24,
+                is_active=True
             ),
-            ApplicantType(
-                code="GOV",
-                name="Government Entities",
-                description="State, local, and municipal governments",
-                is_individual=False
-            ),
-            ApplicantType(
-                code="TRB",
-                name="Tribal Organizations",
-                description="Native American tribal entities",
-                is_individual=False
-            ),
-            ApplicantType(
-                code="HLT",
-                name="Healthcare Organizations",
-                description="Hospitals, clinics, community health centers",
-                is_individual=False
-            ),
-            ApplicantType(
-                code="RES",
-                name="Research Institutions",
-                description="Research labs and institutions",
-                is_individual=False
-            ),
-            ApplicantType(
-                code="ART",
-                name="Artists and Performers",
-                description="Individual artists, writers, performers",
-                is_individual=True
-            ),
-            ApplicantType(
-                code="FRM",
-                name="Farmers and Ranchers",
-                description="Individual farmers and agricultural workers",
-                is_individual=True
+            
+            # Maryland Sources
+            Source(
+                name="Maryland Commerce Funding",
+                url="https://commerce.maryland.gov/fund",
+                state_id=md_state.id,
+                scraper_type="html",
+                scrape_frequency_hours=24,
+                is_active=True
             ),
         ]
-        db.add_all(applicant_types)
+        db.add_all(sources)
         
         db.commit()
-        print("Reference data seeded successfully")
-        print("Added 4 states, 10 agencies, 12 categories, 10 applicant types")
+        
+        print("\n✓ Reference data seeded successfully!")
+        print(f"  - {len(states)} states")
+        print(f"  - {len(agencies)} agencies")
+        print(f"  - {len(sources)} data sources")
         
     except Exception as e:
         db.rollback()
-        print(f"Error during seed: {e}")
+        print(f"\n✗ Error during seed: {e}")
         raise
     finally:
         db.close()
 
 
-if __name__ == "__main__":
-    print("Initializing database tables")
+def reset_database():
+    """
+    Complete database reset: drop all tables, recreate, and seed.
+    Use this when you want a fresh start.
+    """
+    print("="*60)
+    print("DATABASE RESET - RUNWEI-ALIGNED SCHEMA")
+    print("="*60)
+    
     init_db()
     print()
-    print("Seeding reference data")
     seed_initial_data()
-    print()
-    print("Database setup complete")
+    
+    print("\n" + "="*60)
+    print("✓ Database setup complete!")
+    print("="*60)
+    print("\nYou now have:")
+    print("  - Empty opportunities table (ready for grants)")
+    print("  - 4 states configured")
+    print("  - 9 agencies configured")
+    print("  - 5 scraping sources configured")
+    print("  - Review queue ready")
+    print("  - Scrape logs ready")
+    print("\nNext step: Run the multi-agent system to populate grants!")
+
+
+if __name__ == "__main__":
+    reset_database()
