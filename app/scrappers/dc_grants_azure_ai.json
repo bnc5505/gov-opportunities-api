@@ -1,0 +1,96 @@
+{
+  "scraped_at": "2026-02-18T23:53:39.200388",
+  "source": "DC OVSJG - Azure AI Extracted",
+  "extraction_method": "Azure OpenAI GPT-4o",
+  "total_grants": 3,
+  "grants": [
+    {
+      "title": "FY 2026 Justice Grants Supplemental Reentry Project Safe Neighborhood",
+      "description": "The Office of Victim Services and Justice Grants (OVSJG) provides funding to support juvenile and criminal justice-related services. This includes Project Safe Neighborhoods (PSN) activities aimed at preventing, responding to, and reducing violent crimes through community engagement, prevention, intervention, and strategic enforcement.",
+      "deadline": "01/13/2026",
+      "posted_date": "12/08/2025",
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligible_applicant_types": [
+        "Public agencies",
+        "Private community-based non-profit organizations",
+        "Institutions with active SAM registration and Unique Entity ID",
+        "For-profit organizations (as subcontractors only)"
+      ],
+      "contact_email": "ovsjgegms@dc.gov",
+      "key_requirements": [
+        "Active System for Awards Management (SAM) registration and Unique Entity ID",
+        "District business license",
+        "Services or goods provided within the District",
+        "Proposals must demonstrate community engagement, prevention and intervention, focused enforcement, and accountability",
+        "Adherence to Department of Justice core principles, including fostering trust and legitimacy in communities"
+      ],
+      "application_url": "https://ovsjg.dc.gov/sites/default/files/dc/sites/ovsjg/page_content/attachments/Final%20FY%202026%20PSN%20RFA.pdf",
+      "agency": "Office of Victim Services and Justice Grants",
+      "state": "DC",
+      "opportunity_type": "grant"
+    },
+    {
+      "title": "FY2026 Consolidated Request for Applications (RFA) Crime Victim Services",
+      "description": "The grant funds programs to maintain a comprehensive network of trauma-informed services for crime victims, address domestic violence, dating violence, stalking, and sexual assault, and improve victim treatment by providing assistance and services to aid their restoration and support through justice processes.",
+      "deadline": "06/17/2025",
+      "posted_date": "05/13/2025",
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligible_applicant_types": [
+        "Public or private community-based non-profit agencies",
+        "Organizations",
+        "Institutions with active SAM registration and Unique Entity ID",
+        "District business license holders",
+        "For-profit organizations (eligible for local funding but cannot include profit)"
+      ],
+      "contact_email": "ovsjg.rfaquestions@dc.gov",
+      "key_requirements": [
+        "Active System for Awards Management (SAM) registration",
+        "Unique Entity ID",
+        "District business license",
+        "Provision of services or goods within the District",
+        "Compliance with federal and District regulations"
+      ],
+      "application_url": "https://ovsjg.dc.gov/sites/default/files/dc/sites/ovsjg/page_content/attachments/FY2026_Consolidated_Victim_Services_RFA_Final_5.13.25.pdf",
+      "agency": "Office of Victim Services and Justice Grants",
+      "state": "DC",
+      "opportunity_type": "grant"
+    },
+    {
+      "title": "FY2026 Justice Grants Consolidated Request for Applications (RFA)",
+      "description": "The Office of Victim Services and Justice Grants (OVSJG) provides funding to support juvenile and criminal justice-related services, including delinquency prevention, restorative justice, reentry services, and support for incarcerated and returning citizens. The program aims to address violent crime, public safety, and criminal justice issues through evidence-based practices.",
+      "deadline": "06/24/2025",
+      "posted_date": "05/19/2025",
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligible_applicant_types": [
+        "Public agencies",
+        "Private agencies",
+        "Community-based non-profit organizations",
+        "Institutions"
+      ],
+      "contact_email": "ovsjgegms@dc.gov",
+      "key_requirements": [
+        "Applications must be submitted electronically via GovGrants.",
+        "Applicants must indicate the purpose area(s) for funding.",
+        "Grant expenditures must occur between October 1, 2025, and September 30, 2026.",
+        "Requests for technical assistance must be made at least 24 hours before the deadline.",
+        "Applications received after the deadline will be considered ineligible."
+      ],
+      "application_url": "https://ovsjg.dc.gov/sites/default/files/dc/sites/ovsjg/page_content/attachments/05-16-2025%20RFA_FY2026_%20JG%20Consolidated%20-%20Revised_Final0051324%20%283%29.pdf",
+      "agency": "Office of Victim Services and Justice Grants",
+      "state": "DC",
+      "opportunity_type": "grant"
+    }
+  ]
+}
