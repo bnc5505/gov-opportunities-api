@@ -1,0 +1,78 @@
+{
+  "searched_at": "2026-02-19T00:40:04.128149",
+  "total_urls_found": 9,
+  "urls": [
+    {
+      "url": "https://ovsjg.dc.gov/page/funding-opportunities-current",
+      "title": "DC OVSJG Current Funding Opportunities",
+      "description": "Office of Victim Services and Justice Grants funding",
+      "source": "fallback",
+      "query": "DC grants",
+      "found_at": "2026-02-19T00:40:04.128091"
+    },
+    {
+      "url": "https://dslbd.dc.gov/page/grant-programs",
+      "title": "DC Small Business Grants",
+      "description": "Department of Small and Local Business Development",
+      "source": "fallback",
+      "query": "DC grants",
+      "found_at": "2026-02-19T00:40:04.128092"
+    },
+    {
+      "url": "https://dchealth.dc.gov/page/grants-and-funding",
+      "title": "DC Health Grants and Funding",
+      "description": "DC Department of Health grant opportunities",
+      "source": "fallback",
+      "query": "DC grants",
+      "found_at": "2026-02-19T00:40:04.128093"
+    },
+    {
+      "url": "https://dced.pa.gov/programs/",
+      "title": "Pennsylvania DCED Programs",
+      "description": "PA Department of Community and Economic Development",
+      "source": "fallback",
+      "query": "PA grants",
+      "found_at": "2026-02-19T00:40:04.128113"
+    },
+    {
+      "url": "https://www.grants.pa.gov/",
+      "title": "Pennsylvania Grants Portal",
+      "description": "Official PA grants website",
+      "source": "fallback",
+      "query": "PA grants",
+      "found_at": "2026-02-19T00:40:04.128114"
+    },
+    {
+      "url": "https://esd.ny.gov/doing-business-ny/funding-opportunities",
+      "title": "New York ESD Funding Opportunities",
+      "description": "Empire State Development funding",
+      "source": "fallback",
+      "query": "NY grants",
+      "found_at": "2026-02-19T00:40:04.128129"
+    },
+    {
+      "url": "https://www.ny.gov/services/get-government-grant",
+      "title": "New York State Grants",
+      "description": "NY.gov grant opportunities",
+      "source": "fallback",
+      "query": "NY grants",
+      "found_at": "2026-02-19T00:40:04.128130"
+    },
+    {
+      "url": "https://commerce.maryland.gov/fund",
+      "title": "Maryland Commerce Funding",
+      "description": "Maryland Department of Commerce grants",
+      "source": "fallback",
+      "query": "MD grants",
+      "found_at": "2026-02-19T00:40:04.128145"
+    },
+    {
+      "url": "https://grants.maryland.gov/",
+      "title": "Maryland Grants Portal",
+      "description": "Official MD grants website",
+      "source": "fallback",
+      "query": "MD grants",
+      "found_at": "2026-02-19T00:40:04.128146"
+    }
+  ]
+}
