@@ -1,401 +1,497 @@
 """
-Updated Database Models - Aligned with Runwei Platform and Sponsor Column Requirements
+Database models for GovGrants Hub.
 
-This schema reflects the exact field requirements provided by the sponsor.
-Every column in the Opportunity model maps directly to a field the sponsor
-specified in the extraction template.
+This file defines the structure of every table in the database.
+Each Python class here maps to one table. SQLAlchemy reads these
+classes and creates the actual tables when we initialize the database.
+
+We made significant changes from the original version because the
+project scope expanded. The old models were built around federal grants
+from Grants.gov. These new models support the full pipeline including
+state scrapers, multiple opportunity types, pipeline monitoring,
+and human review workflows.
 """
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON, Float, ForeignKey, Enum as SQLEnum, Table, UniqueConstraint
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
+from sqlalchemy import (
+    Column, Integer, String, Text, DateTime,
+    Float, Boolean, ForeignKey, Enum, Table, JSON
+)
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base
 import enum
+
 
 Base = declarative_base()
 
 
-# Association tables for many-to-many relationships
+# These two tables handle many-to-many relationships.
+# An opportunity can belong to multiple categories and vice versa.
+# We do not need full model classes for these, a simple table definition is enough.
 
 opportunity_categories = Table(
     "opportunity_categories",
     Base.metadata,
     Column("opportunity_id", Integer, ForeignKey("opportunities.id"), primary_key=True),
-    Column("category_id", Integer, ForeignKey("categories.id"), primary_key=True),
+    Column("category_id", Integer, ForeignKey("categories.id"), primary_key=True)
 )
 
 opportunity_applicant_types = Table(
     "opportunity_applicant_types",
     Base.metadata,
     Column("opportunity_id", Integer, ForeignKey("opportunities.id"), primary_key=True),
-    Column("applicant_type_id", Integer, ForeignKey("applicant_types.id"), primary_key=True),
+    Column("applicant_type_id", Integer, ForeignKey("applicant_types.id"), primary_key=True)
 )
 
 
 class OpportunityType(str, enum.Enum):
-    # These match every category the sponsor listed in the Columns document.
-    # We keep them as a proper enum so the UI can filter by type cleanly.
-    GRANT                  = "grant"
-    FELLOWSHIP             = "fellowship"
-    PITCH_COMPETITION      = "pitch_competition"
-    PAID_INTERN            = "paid_intern"
-    PAID_FELLOW            = "paid_fellow"
-    EVENT                  = "event"
-    SCHOLARSHIP            = "scholarship"
-    PRO_BONO_CONSULTANT    = "pro_bono_consultant"
-    IN_KIND_SERVICE        = "in_kind_service"
-    FORGIVABLE_LOAN        = "forgivable_loan"
-    TAX_CREDIT             = "tax_credit"
-    LEGISLATIVE_INITIATIVE = "legislative_initiative"
-    ACCELERATOR            = "accelerator"
-    COMPETITION            = "competition"
-    CATALYST               = "catalyst"
-    BOOTCAMP               = "bootcamp"
-    INCUBATOR              = "incubator"
-    STIPEND                = "stipend"
-    MENTORSHIP             = "mentorship"
-    ADVISOR                = "advisor"
-    EXECUTIVE_COACH        = "executive_coach"
-    BUSINESS_COACH         = "business_coach"
-    VOLUNTEER              = "volunteer"
-    PRO_BONO_LEGAL         = "pro_bono_legal"
-    PAID_TRANSACTIONAL_LEGAL = "paid_transactional_legal"
-    CONFERENCE             = "conference"
-    WORKSHOP               = "workshop"
-    CONVENING              = "convening"
-    CONVENTION             = "convention"
+    # The platform covers more than just grants.
+    # This enum makes sure we always use one of these exact values
+    # and never something like "Grant" or "GRANT" which would cause inconsistency.
+    GRANT = "grant"
+    LOAN = "loan"
+    TAX_CREDIT = "tax_credit"
+    FELLOWSHIP = "fellowship"
+    ACCELERATOR = "accelerator"
+    WORKFORCE = "workforce"
+    OTHER = "other"
 
 
 class OpportunityStatus(str, enum.Enum):
-    ACTIVE           = "active"
-    EXPIRING_SOON    = "expiring_soon"    # less than 7 days to deadline
-    ROLLING          = "rolling"          # no fixed deadline
-    RECENTLY_CLOSED  = "recently_closed"
-    ARCHIVED         = "archived"
-    UNVERIFIED       = "unverified"       # needs human review before going live
+    # We simplified this compared to the old GrantStatus enum.
+    # The old one had federal-specific statuses like FORECASTED and CLOSING_SOON
+    # which do not apply to state-scraped data.
+    # UNVERIFIED is the default for anything coming through the pipeline
+    # before a human or automated check confirms the URL is still active.
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    ARCHIVED = "archived"
+    UNVERIFIED = "unverified"
 
 
-class OpportunityCategory(str, enum.Enum):
-    # These are the top-level tabs shown in the Runwei UI.
-    PRIVATE    = "private_opportunities"
-    GOVERNMENT = "government_grants"
-    GLOBAL     = "global"
-    FEATURED   = "featured"
+class ReviewStatus(str, enum.Enum):
+    # Used in the ReviewQueue table to track where a record is
+    # in the human review process.
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    NEEDS_EDIT = "needs_edit"
 
-
-# Core tables
 
 class State(Base):
-    """US states and territories we track opportunities for."""
+    """
+    Tracks the four pilot states: PA, NY, MD, DC.
+    Having a proper states table means adding a new state later
+    is just inserting a row, not changing any code.
+    """
     __tablename__ = "states"
 
-    id   = Column(Integer, primary_key=True, index=True)
-    code = Column(String(2),   unique=True, nullable=False, index=True)
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(5), unique=True, nullable=False, index=True)
     name = Column(String(100), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     opportunities = relationship("Opportunity", back_populates="state")
-    sources       = relationship("Source",      back_populates="state")
+    agencies = relationship("Agency", back_populates="state")
+    sources = relationship("Source", back_populates="state")
+
+
+class Source(Base):
+    """
+    Every website or API we scrape gets a row in this table.
+    This is essential for running the pipeline in production.
+    When a scraper breaks, we need to know which source failed,
+    when it last worked, and how many times in a row it has failed.
+    Without this table we have no way to monitor or debug the pipeline.
+    """
+    __tablename__ = "sources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    url = Column(String(1000), nullable=False)
+    state_id = Column(Integer, ForeignKey("states.id"), nullable=True)
+
+    # what kind of integration this is
+    # options are: api, scraper, rss, manual
+    scraper_type = Column(String(50), nullable=False, default="scraper")
+
+    # how often we should run this scraper, measured in hours
+    scrape_frequency_hours = Column(Integer, default=24)
+
+    last_scraped_at = Column(DateTime, nullable=True)
+    last_success_at = Column(DateTime, nullable=True)
+    consecutive_failures = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    state = relationship("State", back_populates="sources")
+    opportunities = relationship("Opportunity", back_populates="source")
+    scrape_logs = relationship("ScrapeLog", back_populates="source", cascade="all, delete-orphan")
 
 
 class Agency(Base):
     """
-    Government agencies or organisations that administer grants.
-    The sponsor calls this field Sponsor/ESO. We keep a separate agency
-    table so the same funder can be linked to multiple opportunities
-    without duplicating their details on every row.
+    Government agencies and institutions that offer funding.
+    Federal agencies leave state_id as null.
+    State and local agencies link to their state.
     """
     __tablename__ = "agencies"
 
-    id          = Column(Integer,     primary_key=True, index=True)
-    code        = Column(String(50),  unique=True, nullable=False, index=True)
-    name        = Column(String(255), nullable=False)
-    level       = Column(String(20))   # federal, state, local
-    state_id    = Column(Integer,     ForeignKey("states.id"), nullable=True)
-    website_url = Column(String(500))
-    logo_url    = Column(String(500))
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(20), unique=True, nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    website_url = Column(String(1000), nullable=True)
 
-    state         = relationship("State")
+    # federal, state, or local
+    level = Column(String(20), nullable=False, default="federal")
+
+    # only state and local agencies have a state_id
+    state_id = Column(Integer, ForeignKey("states.id"), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    state = relationship("State", back_populates="agencies")
     opportunities = relationship("Opportunity", back_populates="agency")
 
 
-class Source(Base):
-    """The websites and APIs we scrape opportunities from."""
-    __tablename__ = "sources"
+class Category(Base):
+    """
+    The 12 opportunity categories from the project charter.
+    The parent_id column supports subcategories if we need them later.
+    display_order controls the order they appear on the frontend.
+    """
+    __tablename__ = "categories"
 
-    id                     = Column(Integer,     primary_key=True, index=True)
-    name                   = Column(String(255), nullable=False)
-    url                    = Column(String(500), nullable=False, unique=True, index=True)
-    state_id               = Column(Integer,     ForeignKey("states.id"), nullable=True)
-    scraper_type           = Column(String(50))
-    scrape_frequency_hours = Column(Integer,     default=24)
-    is_active              = Column(Boolean,     default=True)
-    last_scraped_at        = Column(DateTime,    nullable=True)
-    last_success_at        = Column(DateTime,    nullable=True)
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    display_order = Column(Integer, default=0)
+    parent_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    state        = relationship("State",    back_populates="sources")
-    opportunities = relationship("Opportunity", back_populates="source")
-    scrape_logs  = relationship("ScrapeLog",    back_populates="source")
+    parent = relationship("Category", remote_side=[id], backref="subcategories")
+    opportunities = relationship(
+        "Opportunity",
+        secondary=opportunity_categories,
+        back_populates="categories"
+    )
+
+
+class ApplicantType(Base):
+    """
+    The types of applicants who can apply for an opportunity.
+    The is_individual flag lets us quickly query for opportunities
+    open to individual applicants without joining to opportunities.
+    """
+    __tablename__ = "applicant_types"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    code = Column(String(30), unique=True, nullable=False)
+    description = Column(Text, nullable=True)
+    is_individual = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    opportunities = relationship(
+        "Opportunity",
+        secondary=opportunity_applicant_types,
+        back_populates="eligible_applicants"
+    )
 
 
 class Opportunity(Base):
     """
-    Main opportunities table.
+    The central table of the entire platform.
+    Every grant, loan, fellowship, tax credit, and accelerator
+    ends up here after going through the scraping pipeline.
 
-    Every column here maps directly to a field the sponsor specified.
-    The section comments below use the sponsor's exact field names so it
-    is easy to cross-reference against the Columns document.
+    Key design decisions explained:
+
+    opportunity_number is nullable because state-scraped records will not have
+    a federal-style opportunity number. The old model had this as required,
+    which would have broken every state scraper we build.
+
+    source_id tracks which scraper produced this record. This is how we
+    debug pipeline issues and re-process records from a specific source.
+
+    eligibility_individual and eligibility_organization are stored as simple
+    booleans so the frontend can filter with a single checkbox without
+    any complex joins.
+
+    raw_source_data stores the original scraped content as JSON before we
+    transformed it. If our parsing logic has a bug, we can fix the code
+    and reprocess without scraping the website again.
+
+    classification_confidence is the NLP model's confidence score for the
+    category it assigned. Anything below a threshold goes to the review queue.
+
+    application_url is the most important field for users. This is what
+    the Apply button on the frontend links to.
     """
     __tablename__ = "opportunities"
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Title
-    # Sponsor field: Title
+    # opportunity_number is nullable on purpose, state sources do not have this
+    opportunity_number = Column(String(100), unique=True, nullable=True, index=True)
     title = Column(String(500), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    summary = Column(String(1000), nullable=True)
 
-    # Sponsor/ESO and their website
-    # Sponsor fields: Sponsor/ESO, Sponsor Website
-    # sponsor_name duplicates agency.name for cases where we do not have a
-    # full agency record yet, or where the sponsor is not a government body.
-    sponsor_name    = Column(String(255), nullable=True)
-    sponsor_website = Column(String(500), nullable=True)
+    opportunity_type = Column(
+        Enum(OpportunityType),
+        nullable=False,
+        default=OpportunityType.GRANT
+    )
 
-    # Logo
-    # Sponsor field: Logo Image Address URL
-    logo_url = Column(String(500), nullable=True)
-
-    # Geography
-    # Sponsor fields: Global Opportunity, Location
-    is_global  = Column(Boolean, default=False)  # Yes/No
-    location   = Column(JSON,    nullable=True)   # list of regions or countries
-
-    # URLs
-    # Sponsor fields: Opportunity Link or URL, Direct Application Link
-    opportunity_url = Column(String(500), nullable=True)  # the page describing the opportunity
-    application_url = Column(String(500), nullable=False, default="")  # the apply button URL
-
-    # Award amounts
-    # Sponsor fields: Award Value (USD), Cash Award (USD)
-    award_value = Column(String(100), nullable=True)  # display string e.g. "$25,000"
-    award_min   = Column(Float,       nullable=True)
-    award_max   = Column(Float,       nullable=True)
-    cash_award  = Column(Float,       nullable=True)  # cash portion if separate from total award
-    total_funding = Column(Float,     nullable=True)
-
-    # Dates
-    # Sponsor fields: Date Posted, Rolling, Deadline
-    posted_date      = Column(DateTime, nullable=True)
-    rolling          = Column(Boolean,  default=False)  # Yes/No
-    deadline         = Column(DateTime, nullable=True, index=True)
-    deadline_display = Column(String(100), nullable=True)  # e.g. "Jun 15, 2026"
-
-    # Classification
-    # Sponsor fields: Opportunity Category, Industry, Tags
-    opportunity_type = Column(SQLEnum(OpportunityType),     default=OpportunityType.GRANT)
-    category         = Column(SQLEnum(OpportunityCategory), default=OpportunityCategory.GOVERNMENT)
-    status           = Column(SQLEnum(OpportunityStatus),   default=OpportunityStatus.UNVERIFIED, index=True)
-    industry         = Column(String(100), nullable=True)
-    tags             = Column(JSON, nullable=True)  # list of keyword strings
-
-    # SDG Alignment
-    # Sponsor field: SDG Alignment
-    # Stored as a list of strings e.g. ["SDG 8: Decent Work and Economic Growth"]
-    sdg_alignment = Column(JSON, nullable=True)
-
-    # Opportunity Gap Resources
-    # Sponsor field: Opportunity Gap Resources (Capital, Networks, Capacity Building)
-    # Previously called areas_of_focus in the old schema.
-    opportunity_gap_resources = Column(JSON, nullable=True)
-
-    # Content
-    # Sponsor fields: Summary, Description, Eligibility
-    summary     = Column(String(500), nullable=True)  # 2 sentences max
-    description = Column(Text,        nullable=True)  # 5-10 sentences
-    eligibility_requirements = Column(JSON, nullable=True)  # list of bullet point strings
-
-    # Eligibility flags used by the Runwei filter chips
-    eligibility_individual   = Column(Boolean, default=False)
-    eligibility_organization = Column(Boolean, default=True)
-
-    # Global locations breakdown (separate from the boolean is_global)
-    global_locations = Column(JSON, nullable=True)  # e.g. ["Europe", "West Africa"]
-
-    # Contact
-    # Sponsor fields: Contact Names, Contact Email
-    contact_names = Column(String(500), nullable=True)  # comma-separated names
-    contact_email = Column(String(255), nullable=True)
-    contact_phone = Column(String(50),  nullable=True)
-
-    # Additional checks
-    # Sponsor fields: Fee Required, Cost to Participate, Equity Percentage, SAFE Note
-    # These are flagged as disqualifying in some contexts so we store both
-    # the boolean and the detail string for display in the review UI.
-    fee_required          = Column(Boolean, default=False)
-    fee_amount            = Column(String(100), nullable=True)
-    cost_to_participate   = Column(Boolean, default=False)
-    cost_amount           = Column(String(100), nullable=True)
-    equity_percentage     = Column(Boolean, default=False)
-    equity_details        = Column(String(255), nullable=True)
-    safe_note             = Column(Boolean, default=False)
-    safe_note_details     = Column(String(255), nullable=True)
-
-    # Relationships to other tables
-    source_id = Column(Integer, ForeignKey("sources.id"),  nullable=False)
+    # where this record came from
+    source_id = Column(Integer, ForeignKey("sources.id"), nullable=True)
     agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=True)
-    state_id  = Column(Integer, ForeignKey("states.id"),   nullable=True)
+    state_id = Column(Integer, ForeignKey("states.id"), nullable=True)
 
-    # Data quality tracking
-    data_quality_score    = Column(Float,   default=0.0)
-    extraction_confidence = Column(Float,   default=0.0)
-    needs_review          = Column(Boolean, default=True, index=True)
+    # who can apply, these are the most important filter fields for users
+    eligibility_individual = Column(Boolean, default=False, index=True)
+    eligibility_organization = Column(Boolean, default=False, index=True)
+    eligibility_description = Column(Text, nullable=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # financial details, all optional because not every source provides these
+    award_min = Column(Float, nullable=True)
+    award_max = Column(Float, nullable=True)
+    total_funding = Column(Float, nullable=True)
+    expected_awards = Column(Integer, nullable=True)
 
-    # Raw extracted data kept for audit and manual verification
+    # dates
+    posted_date = Column(DateTime, nullable=True)
+    deadline = Column(DateTime, nullable=True, index=True)
+    expected_award_date = Column(DateTime, nullable=True)
+
+    # this is what the Apply button on the frontend will link to
+    application_url = Column(String(1000), nullable=True)
+
+    # contact information from the source
+    contact_name = Column(String(255), nullable=True)
+    contact_email = Column(String(255), nullable=True)
+    contact_phone = Column(String(50), nullable=True)
+
+    # only relevant for federal records from Grants.gov
+    cfda_number = Column(String(20), nullable=True)
+
+    # pipeline tracking fields
+    status = Column(
+        Enum(OpportunityStatus),
+        default=OpportunityStatus.UNVERIFIED,
+        index=True
+    )
+
+    # how complete is this record on a scale of 0 to 1
+    data_quality_score = Column(Float, nullable=True)
+
+    # how confident is the NLP classifier about the category it picked
+    classification_confidence = Column(Float, nullable=True)
+
+    # when was the application_url last confirmed as working
+    last_verified_at = Column(DateTime, nullable=True)
+
+    # the original scraped content before we transformed it
     raw_source_data = Column(JSON, nullable=True)
 
-    source            = relationship("Source",        back_populates="opportunities")
-    agency            = relationship("Agency",        back_populates="opportunities")
-    state             = relationship("State",         back_populates="opportunities")
-    categories        = relationship("Category",      secondary=opportunity_categories,    back_populates="opportunities")
-    eligible_applicants = relationship("ApplicantType", secondary=opportunity_applicant_types, back_populates="opportunities")
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_synced_at = Column(DateTime, nullable=True)
 
-    @property
-    def agency_name(self):
-        """Resolved agency name for OpportunityListItem serialization."""
-        if self.agency:
-            return self.agency.name
-        return self.sponsor_name
-
-    @property
-    def state_code(self):
-        """Resolved state code for OpportunityListItem serialization."""
-        if self.state:
-            return self.state.code
-        return None
-
-
-# Supporting tables
-
-class Category(Base):
-    """Grant categories used for filtering in the Runwei UI."""
-    __tablename__ = "categories"
-
-    id            = Column(Integer,      primary_key=True, index=True)
-    name          = Column(String(100),  nullable=False)
-    slug          = Column(String(100),  unique=True, nullable=False, index=True)
-    description   = Column(Text,         nullable=True)
-    display_order = Column(Integer,      default=0)
-    parent_id     = Column(Integer,      ForeignKey("categories.id"), nullable=True)
-    is_active     = Column(Boolean,      default=True)
-    created_at    = Column(DateTime,     default=datetime.utcnow)
-
-    opportunities = relationship("Opportunity", secondary=opportunity_categories, back_populates="categories")
-    children      = relationship("Category", foreign_keys=[parent_id],
-                                 backref=backref("parent", remote_side="[Category.id]"))
+    # relationships
+    source = relationship("Source", back_populates="opportunities")
+    agency = relationship("Agency", back_populates="opportunities")
+    state = relationship("State", back_populates="opportunities")
+    categories = relationship(
+        "Category",
+        secondary=opportunity_categories,
+        back_populates="opportunities"
+    )
+    eligible_applicants = relationship(
+        "ApplicantType",
+        secondary=opportunity_applicant_types,
+        back_populates="opportunities"
+    )
+    documents = relationship(
+        "OpportunityDocument",
+        back_populates="opportunity",
+        cascade="all, delete-orphan"
+    )
+    saved_by_users = relationship(
+        "SavedOpportunity",
+        back_populates="opportunity",
+        cascade="all, delete-orphan"
+    )
+    review_queue_entries = relationship(
+        "ReviewQueue",
+        back_populates="opportunity",
+        cascade="all, delete-orphan"
+    )
 
 
-class ApplicantType(Base):
-    """Types of eligible applicants, used for Runwei filter chips."""
-    __tablename__ = "applicant_types"
+class OpportunityDocument(Base):
+    """
+    Documents attached to an opportunity such as application guidelines,
+    FAQ documents, and program overviews. We store the URL to the file,
+    not the file itself.
+    """
+    __tablename__ = "opportunity_documents"
 
-    id            = Column(Integer,     primary_key=True, index=True)
-    name          = Column(String(100), nullable=False)
-    code          = Column(String(50),  unique=True, nullable=False, index=True)
-    description   = Column(Text,        nullable=True)
-    is_individual = Column(Boolean,     default=False)
-    created_at    = Column(DateTime,    default=datetime.utcnow)
+    id = Column(Integer, primary_key=True, index=True)
+    opportunity_id = Column(Integer, ForeignKey("opportunities.id"), nullable=False)
 
-    opportunities = relationship("Opportunity", secondary=opportunity_applicant_types, back_populates="eligible_applicants")
+    title = Column(String(255), nullable=False)
+    document_type = Column(String(50), nullable=False)
+    file_url = Column(String(1000), nullable=False)
+    file_size = Column(Integer, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    opportunity = relationship("Opportunity", back_populates="documents")
 
 
 class User(Base):
-    """Platform users."""
+    """
+    User accounts for people who want to save opportunities
+    and set up search alerts. Both individuals and organizational
+    users share this table. user_type tells them apart.
+    """
     __tablename__ = "users"
 
-    id                = Column(Integer,     primary_key=True, index=True)
-    email             = Column(String(255), unique=True, nullable=False, index=True)
-    hashed_password   = Column(String(255), nullable=False)
-    full_name         = Column(String(255), nullable=True)
-    user_type         = Column(String(50),  nullable=True)
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    full_name = Column(String(255), nullable=True)
+
+    # individual or organization
+    user_type = Column(String(20), nullable=False, default="individual")
+
+    # only relevant for organizational users
     organization_name = Column(String(255), nullable=True)
     organization_type = Column(String(100), nullable=True)
-    is_active         = Column(Boolean,     default=True)
-    is_admin          = Column(Boolean,     default=False)
-    created_at        = Column(DateTime,    default=datetime.utcnow)
-    last_login        = Column(DateTime,    nullable=True)
 
-    saved_opportunities = relationship("SavedOpportunity", back_populates="user")
-    saved_searches      = relationship("SavedSearch",      back_populates="user")
+    is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+
+    # stores things like preferred states and categories as JSON
+    preferences = Column(JSON, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_login = Column(DateTime, nullable=True)
+
+    saved_opportunities = relationship(
+        "SavedOpportunity",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    saved_searches = relationship(
+        "SavedSearch",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
 
 class SavedOpportunity(Base):
-    """Opportunities bookmarked by users."""
+    """
+    When a user bookmarks an opportunity, we store it here.
+    They can also add personal notes to remind themselves why they saved it.
+    """
     __tablename__ = "saved_opportunities"
 
-    id             = Column(Integer, primary_key=True, index=True)
-    user_id        = Column(Integer, ForeignKey("users.id"),        nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     opportunity_id = Column(Integer, ForeignKey("opportunities.id"), nullable=False)
-    notes          = Column(Text,    nullable=True)
-    created_at     = Column(DateTime, default=datetime.utcnow)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    __table_args__ = (UniqueConstraint("user_id", "opportunity_id", name="uq_user_opportunity"),)
-
-    user        = relationship("User",        back_populates="saved_opportunities")
-    opportunity = relationship("Opportunity")
+    user = relationship("User", back_populates="saved_opportunities")
+    opportunity = relationship("Opportunity", back_populates="saved_by_users")
 
 
 class SavedSearch(Base):
-    """Saved search queries with optional email notifications."""
+    """
+    A search a user has saved so they can be notified when new
+    matching opportunities appear. The search filters are stored as JSON
+    so we can support any combination of filters without changing the schema.
+    """
     __tablename__ = "saved_searches"
 
-    id                    = Column(Integer,     primary_key=True, index=True)
-    user_id               = Column(Integer,     ForeignKey("users.id"), nullable=False)
-    name                  = Column(String(255), nullable=False)
-    search_criteria       = Column(JSON,        nullable=True)
-    notify_on_new_results = Column(Boolean,     default=False)
-    created_at            = Column(DateTime,    default=datetime.utcnow)
-    updated_at            = Column(DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_notified_at      = Column(DateTime,    nullable=True)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+
+    # stores the full filter state as a JSON object
+    search_criteria = Column(JSON, nullable=False)
+
+    notify_on_new_results = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_notified_at = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="saved_searches")
 
 
 class ReviewQueue(Base):
     """
-    Opportunities flagged for human review before going live.
-    Records land here automatically when extraction_confidence is below 0.6
-    or when any of the disqualifying flags are set (fee, equity, SAFE note).
+    This is the human-in-the-loop component of the pipeline.
+    When the NLP classifier is not confident about a record, or when
+    automated verification fails, the record lands here for a human to review.
+    The reviewer can approve it, reject it, or flag it as needing an edit.
     """
     __tablename__ = "review_queue"
 
-    id             = Column(Integer,     primary_key=True, index=True)
-    opportunity_id = Column(Integer,     ForeignKey("opportunities.id"), nullable=False)
-    priority       = Column(Integer,     default=0)
-    reason         = Column(String(255), nullable=True)
-    assigned_to    = Column(String(100), nullable=True)
-    reviewed       = Column(Boolean,     default=False, index=True)
-    reviewed_at    = Column(DateTime,    nullable=True)
-    reviewer_notes = Column(Text,        nullable=True)
-    created_at     = Column(DateTime,    default=datetime.utcnow)
+    id = Column(Integer, primary_key=True, index=True)
+    opportunity_id = Column(Integer, ForeignKey("opportunities.id"), nullable=False)
 
-    opportunity    = relationship("Opportunity")
+    # why did this end up in the queue
+    reason = Column(String(255), nullable=False)
+
+    review_status = Column(
+        Enum(ReviewStatus),
+        default=ReviewStatus.PENDING,
+        index=True
+    )
+
+    assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewer_notes = Column(Text, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    opportunity = relationship("Opportunity", back_populates="review_queue_entries")
 
 
 class ScrapeLog(Base):
-    """One row per pipeline run. Used to track health and throughput."""
+    """
+    Every time a scraper runs, we write a log entry here.
+    This gives us a history of how each source is performing,
+    how many records it is finding, and whether it is erroring.
+    Without this we have no visibility into the pipeline.
+    """
     __tablename__ = "scrape_logs"
 
-    id             = Column(Integer,     primary_key=True, index=True)
-    source_id      = Column(Integer,     ForeignKey("sources.id"), nullable=False)
-    started_at     = Column(DateTime,    default=datetime.utcnow)
-    completed_at   = Column(DateTime,    nullable=True)
-    status         = Column(String(50),  nullable=True)
-    grants_found   = Column(Integer,     default=0)
-    grants_new     = Column(Integer,     default=0)
-    grants_updated = Column(Integer,     default=0)
-    error_message  = Column(Text,        nullable=True)
+    id = Column(Integer, primary_key=True, index=True)
+    source_id = Column(Integer, ForeignKey("sources.id"), nullable=False)
+
+    started_at = Column(DateTime, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+
+    records_found = Column(Integer, default=0)
+    records_added = Column(Integer, default=0)
+    records_updated = Column(Integer, default=0)
+    records_failed = Column(Integer, default=0)
+
+    # SUCCESS or FAILED
+    run_status = Column(String(20), nullable=False, default="SUCCESS")
+    error_message = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     source = relationship("Source", back_populates="scrape_logs")
