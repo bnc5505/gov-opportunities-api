@@ -1,13 +1,4 @@
-"""
-Pydantic Schemas - Aligned with Updated models.py and Sponsor Columns Document
 
-These schemas are used for:
-- API request validation (Create/Update)
-- API response serialization (Response)
-- Internal data transfer between pipeline and database layer
-
-Every field here corresponds directly to a column in models.py.
-"""
 
 from pydantic import BaseModel, Field, HttpUrl, EmailStr, validator
 from typing import Optional, List
