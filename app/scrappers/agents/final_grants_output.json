@@ -1,0 +1,109 @@
+{
+  "pipeline_stats": {
+    "pipeline_started": "2026-02-19T00:50:10.616846",
+    "pipeline_completed": "2026-02-19T00:50:32.521214",
+    "duration_seconds": 21.904368,
+    "states_searched": [
+      "DC",
+      "PA",
+      "NY",
+      "MD"
+    ],
+    "urls_discovered": 9,
+    "grants_extracted": 21,
+    "grants_validated": 2,
+    "grants_rejected": 0,
+    "avg_quality_score": 0.625,
+    "needs_review_count": 2
+  },
+  "grants": [
+    {
+      "title": "FY26 Project Safe Neighborhood Request for Applications",
+      "description": "Request for applications for the FY26 Project Safe Neighborhood program.",
+      "opportunity_type": "grant",
+      "state": "DC",
+      "deadline": null,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "contact_email": "[email\u00a0protected]",
+      "application_url": "https://ovsjg.dc.gov/page/funding-opportunities-current",
+      "categories": [
+        "Economic Development"
+      ],
+      "status": "unverified",
+      "data_quality_score": 0.6,
+      "extraction_confidence": 0.8,
+      "raw_source_data": {
+        "original_extraction": {
+          "title": "FY26 Project Safe Neighborhood Request for Applications",
+          "description": "Request for applications for the FY26 Project Safe Neighborhood program.",
+          "deadline": null,
+          "award_min": null,
+          "award_max": null,
+          "contact_email": "[email\u00a0protected]",
+          "application_url": "https://ovsjg.dc.gov/page/funding-opportunities-current",
+          "state": "DC",
+          "opportunity_type": "grant",
+          "extraction_confidence": 0.8,
+          "categories": [
+            "Economic Development"
+          ],
+          "data_quality_score": 0.6,
+          "needs_review": true,
+          "status": "unverified",
+          "enriched_at": "2026-02-19T00:50:32.516924"
+        }
+      },
+      "created_at": "2026-02-19T00:50:32.521187",
+      "updated_at": "2026-02-19T00:50:32.521193"
+    },
+    {
+      "title": "Abandoned Mine Drainage Abatement and Treatment Program (AMDATP)",
+      "description": "Provides funds for abandoned mine drainage, abatement, and treatment to address one of the largest sources of stream impairment in Pennsylvania.",
+      "opportunity_type": "grant",
+      "state": "PA",
+      "deadline": "02/05/2026",
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "contact_email": null,
+      "application_url": "https://dced.pa.gov/programs/",
+      "categories": [
+        "Economic Development"
+      ],
+      "status": "expired",
+      "data_quality_score": 0.65,
+      "extraction_confidence": 0.8,
+      "raw_source_data": {
+        "original_extraction": {
+          "title": "Abandoned Mine Drainage Abatement and Treatment Program (AMDATP)",
+          "description": "Provides funds for abandoned mine drainage, abatement, and treatment to address one of the largest sources of stream impairment in Pennsylvania.",
+          "deadline": "02/05/2026",
+          "award_min": null,
+          "award_max": null,
+          "contact_email": null,
+          "application_url": "https://dced.pa.gov/programs/",
+          "state": "PA",
+          "opportunity_type": "grant",
+          "extraction_confidence": 0.8,
+          "categories": [
+            "Economic Development"
+          ],
+          "data_quality_score": 0.65,
+          "needs_review": true,
+          "status": "expired",
+          "enriched_at": "2026-02-19T00:50:32.520438"
+        }
+      },
+      "created_at": "2026-02-19T00:50:32.521201",
+      "updated_at": "2026-02-19T00:50:32.521202"
+    }
+  ]
+}
