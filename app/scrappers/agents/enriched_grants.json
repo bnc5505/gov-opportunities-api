@@ -1,0 +1,63 @@
+{
+  "enriched_at": "2026-02-19T00:45:09.008765",
+  "total_grants": 3,
+  "grants": [
+    {
+      "title": "FY26 Project Safe Neighborhood Request for Applications",
+      "description": "Grant opportunity for the FY26 Project Safe Neighborhood program.",
+      "deadline": null,
+      "award_min": null,
+      "award_max": null,
+      "contact_email": "[email\u00a0protected]",
+      "application_url": "https://ovsjg.dc.gov/page/funding-opportunities-current",
+      "state": "DC",
+      "opportunity_type": "grant",
+      "extraction_confidence": 0.8,
+      "categories": [
+        "Technology"
+      ],
+      "data_quality_score": 0.6,
+      "needs_review": true,
+      "status": "unverified",
+      "enriched_at": "2026-02-19T00:45:09.008730"
+    },
+    {
+      "title": "FY26 Consolidated Request for Applications (RFA) Crime Victim Services",
+      "description": "Grant opportunity for consolidated crime victim services in FY26.",
+      "deadline": null,
+      "award_min": null,
+      "award_max": null,
+      "contact_email": "[email\u00a0protected]",
+      "application_url": "https://ovsjg.dc.gov/page/funding-opportunities-current",
+      "state": "DC",
+      "opportunity_type": "grant",
+      "extraction_confidence": 0.8,
+      "categories": [
+        "Technology"
+      ],
+      "data_quality_score": 0.6,
+      "needs_review": true,
+      "status": "unverified",
+      "enriched_at": "2026-02-19T00:45:09.008749"
+    },
+    {
+      "title": "FY26 Justice Grants Consolidated Request for Applications (RFA)",
+      "description": "Grant opportunity for consolidated justice grants in FY26.",
+      "deadline": null,
+      "award_min": null,
+      "award_max": null,
+      "contact_email": "[email\u00a0protected]",
+      "application_url": "https://ovsjg.dc.gov/page/funding-opportunities-current",
+      "state": "DC",
+      "opportunity_type": "grant",
+      "extraction_confidence": 0.8,
+      "categories": [
+        "Technology"
+      ],
+      "data_quality_score": 0.6,
+      "needs_review": true,
+      "status": "unverified",
+      "enriched_at": "2026-02-19T00:45:09.008760"
+    }
+  ]
+}
