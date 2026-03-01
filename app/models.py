@@ -240,6 +240,11 @@ class Opportunity(Base):
 
     # opportunity_number is nullable on purpose, state sources do not have this
     opportunity_number = Column(String(100), unique=True, nullable=True, index=True)
+
+    # Stable dedup key: sha256(state_code + "|" + application_url), set by sync script.
+    # This is the anchor for upserts — we never create duplicates across re-runs.
+    opportunity_key = Column(String(64), unique=True, nullable=True, index=True)
+
     title = Column(String(500), nullable=False, index=True)
     description = Column(Text, nullable=True)
     summary = Column(String(1000), nullable=True)
@@ -271,8 +276,42 @@ class Opportunity(Base):
     deadline = Column(DateTime, nullable=True, index=True)
     expected_award_date = Column(DateTime, nullable=True)
 
+    # page describing the grant (vs the application form itself)
+    opportunity_url = Column(String(1000), nullable=True)
+
     # this is what the Apply button on the frontend will link to
     application_url = Column(String(1000), nullable=True)
+
+    # sponsor branding and website
+    logo_url = Column(String(1000), nullable=True)
+    sponsor_website = Column(String(1000), nullable=True)
+
+    # geographic scope
+    is_global = Column(Boolean, default=False)
+    # list of regions or countries e.g. ["United States", "Canada"]
+    locations = Column(JSON, nullable=True)
+
+    # financial structure beyond min/max award
+    cash_award = Column(Float, nullable=True)
+    equity_percentage = Column(Float, nullable=True)
+    safe_note = Column(Boolean, nullable=True)
+
+    # application cost
+    fee_required = Column(Boolean, nullable=True)
+    fee_amount = Column(Float, nullable=True)
+    cost_to_participate = Column(Float, nullable=True)
+
+    # rolling applications (no fixed deadline)
+    rolling = Column(Boolean, nullable=True)
+
+    # taxonomy and classification
+    # e.g. ["Innovation", "Entrepreneurship"]
+    tags = Column(JSON, nullable=True)
+    # UN SDG goals e.g. ["SDG 1: No Poverty", "SDG 8: Decent Work"]
+    sdg_alignment = Column(JSON, nullable=True)
+    # e.g. ["Capital", "Networks", "Capacity Building"]
+    opportunity_gap_resources = Column(JSON, nullable=True)
+    industry = Column(String(255), nullable=True)
 
     # contact information from the source
     contact_name = Column(String(255), nullable=True)
