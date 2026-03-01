@@ -20,7 +20,8 @@ import requests
 from bs4 import BeautifulSoup
 from dateutil import parser as dateparser
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from pathlib import Path as _Path
+sys.path.insert(0, str(_Path(__file__).resolve().parent.parent.parent / "app"))
 
 from models import (
     Opportunity, Agency, Source, State, ScrapeLog, ReviewQueue,

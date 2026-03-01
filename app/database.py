@@ -174,84 +174,37 @@ def seed_initial_data():
         db.add_all(agencies)
         db.flush()
         
-        # Seed the 12 opportunity categories from the project charter
+        # Seed the 25 opportunity-type categories as defined by the sponsor
         categories = [
-            Category(
-                name="Research and Innovation",
-                slug="research-innovation",
-                description="Scientific research, medical studies, technology development",
-                display_order=1
-            ),
-            Category(
-                name="Small Business and Entrepreneurship",
-                slug="small-business",
-                description="Startup funding, minority business support, rural businesses",
-                display_order=2
-            ),
-            Category(
-                name="Economic and Community Development",
-                slug="economic-development",
-                description="Infrastructure, job creation, business districts",
-                display_order=3
-            ),
-            Category(
-                name="Education and Academic Funding",
-                slug="education",
-                description="Scholarships, school programs, STEM education",
-                display_order=4
-            ),
-            Category(
-                name="Nonprofit and Social Services",
-                slug="nonprofit",
-                description="Community programs, food security, housing",
-                display_order=5
-            ),
-            Category(
-                name="Healthcare and Public Health",
-                slug="healthcare",
-                description="Hospitals, clinics, disease prevention, mental health",
-                display_order=6
-            ),
-            Category(
-                name="Technology and Digital Infrastructure",
-                slug="technology",
-                description="Broadband, cybersecurity, smart cities",
-                display_order=7
-            ),
-            Category(
-                name="Environment and Sustainability",
-                slug="environment",
-                description="Climate action, renewable energy, conservation",
-                display_order=8
-            ),
-            Category(
-                name="Arts, Culture and Humanities",
-                slug="arts-culture",
-                description="Museums, historic preservation, creative programs",
-                display_order=9
-            ),
-            Category(
-                name="Agriculture and Rural Development",
-                slug="agriculture",
-                description="Farm support, rural broadband, food systems",
-                display_order=10
-            ),
-            Category(
-                name="Workforce and Employment",
-                slug="workforce",
-                description="Job training, apprenticeships, career services",
-                display_order=11
-            ),
-            Category(
-                name="Disaster Relief and Emergency",
-                slug="disaster-relief",
-                description="Recovery funding, emergency preparedness",
-                display_order=12
-            ),
+            Category(name="Grant", slug="grant", display_order=1),
+            Category(name="Fellowship", slug="fellowship", display_order=2),
+            Category(name="Pitch Competition", slug="pitch-competition", display_order=3),
+            Category(name="Paid Intern", slug="paid-intern", display_order=4),
+            Category(name="Paid Fellow", slug="paid-fellow", display_order=5),
+            Category(name="Event", slug="event", display_order=6),
+            Category(name="Scholarship", slug="scholarship", display_order=7),
+            Category(name="Pro-Bono Consultant", slug="pro-bono-consultant", display_order=8),
+            Category(name="In-Kind Service", slug="in-kind-service", display_order=9),
+            Category(name="Forgivable Loan", slug="forgivable-loan", display_order=10),
+            Category(name="Tax Credit", slug="tax-credit", display_order=11),
+            Category(name="Accelerator", slug="accelerator", display_order=12),
+            Category(name="Competition", slug="competition", display_order=13),
+            Category(name="Bootcamp", slug="bootcamp", display_order=14),
+            Category(name="Incubator", slug="incubator", display_order=15),
+            Category(name="Stipend", slug="stipend", display_order=16),
+            Category(name="Mentorship", slug="mentorship", display_order=17),
+            Category(name="Advisor", slug="advisor", display_order=18),
+            Category(name="Executive Coach", slug="executive-coach", display_order=19),
+            Category(name="Business Coach", slug="business-coach", display_order=20),
+            Category(name="Volunteer", slug="volunteer", display_order=21),
+            Category(name="Conference", slug="conference", display_order=22),
+            Category(name="Workshop", slug="workshop", display_order=23),
+            Category(name="Convening", slug="convening", display_order=24),
+            Category(name="Convention", slug="convention", display_order=25),
         ]
         db.add_all(categories)
         db.flush()
-        
+
         # Seed applicant types
         # These cover both individual and organizational applicants
         applicant_types = [
@@ -320,7 +273,7 @@ def seed_initial_data():
         
         db.commit()
         print("Reference data seeded successfully")
-        print("Added 4 states, 10 agencies, 12 categories, 10 applicant types")
+        print("Added 4 states, 10 agencies, 25 categories, 10 applicant types")
         
     except Exception as e:
         db.rollback()
