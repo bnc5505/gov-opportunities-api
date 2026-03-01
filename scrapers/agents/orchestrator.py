@@ -11,8 +11,9 @@ from typing import List, Dict
 import sys
 import os
 
-# Add parent directory to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add scrapers/ to path so 'from agents.X import Y' resolves correctly
+from pathlib import Path as _Path
+sys.path.append(str(_Path(__file__).resolve().parent.parent))
 
 from agents.search_agent import SearchAgent
 from agents.extractor_agent import ExtractorAgent

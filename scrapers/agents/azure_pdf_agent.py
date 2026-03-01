@@ -14,7 +14,8 @@ from typing import Dict, Optional, List
 from openai import AzureOpenAI
 from datetime import datetime
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from pathlib import Path as _Path
+sys.path.insert(0, str(_Path(__file__).resolve().parent.parent.parent / "app"))
 from config import settings
 
 
@@ -204,12 +205,15 @@ def process_dc_grants_with_azure_ai():
             'grants': grants
         }
         
-        with open('dc_grants_azure_ai.json', 'w') as f:
+        _out_dir = str(_Path(__file__).resolve().parent.parent.parent / "data" / "dc")
+        os.makedirs(_out_dir, exist_ok=True)
+        _out_path = os.path.join(_out_dir, "dc_grants_azure_ai.json")
+        with open(_out_path, 'w') as f:
             json.dump(output, f, indent=2)
-        
+
         print(f"\n{'='*60}")
         print(f"✓ SUCCESS! Processed {len(grants)} grants")
-        print(f"✓ Saved to dc_grants_azure_ai.json")
+        print(f"✓ Saved to {_out_path}")
         print(f"{'='*60}")
     
     return grants

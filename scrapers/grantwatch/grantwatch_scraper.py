@@ -4,7 +4,7 @@
 # page, scrapes full details, and writes everything into PostgreSQL.
 #
 # Run from project root:
-#   cd gov-opportunities-api && python -m app.scrappers.grantwatch_scraper
+#   cd gov-opportunities-api && .venv/bin/python scrapers/grantwatch/grantwatch_scraper.py
 
 import os
 import sys
@@ -22,7 +22,8 @@ from sqlalchemy.orm import Session
 from ddgs import DDGS
 
 # Allow imports from app/ regardless of working directory
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from pathlib import Path as _Path
+sys.path.insert(0, str(_Path(__file__).resolve().parent.parent.parent / "app"))
 
 from models import (
     Base,
@@ -104,9 +105,10 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-REQUEST_DELAY = 2
-SEARCH_DELAY  = 3
-MAX_RETRIES   = 3
+REQUEST_DELAY        = 2
+SEARCH_DELAY         = 3
+MAX_RETRIES          = 3
+MAX_PAGES_PER_CATEGORY = 5   # GrantWatch shows ~50 grants/page; scrape up to this many pages
 
 
 # ── HTTP helpers ─────────────────────────────────────────────────────────────
@@ -193,16 +195,9 @@ def opportunity_already_exists(db: Session, title: str, deadline: Optional[datet
 GRANTWATCH_BASE = "https://washingtondc.grantwatch.com"
 
 
-def extract_grants_from_category(url: str, category_name: str) -> list:
-    log.info("Extracting from: %s", category_name)
-    resp = safe_get(url)
-    if not resp:
-        log.error("Could not fetch %s", url)
-        return []
-
-    soup   = BeautifulSoup(resp.text, "lxml")
+def _parse_cards_from_soup(soup: BeautifulSoup, category_name: str) -> list:
+    """Parse grant cards out of a GrantWatch category page soup."""
     grants = []
-
     # GrantWatch card structure (2025+):
     #   <div class="card-body p-3">
     #     <a class="text-dark text-decoration-none" href="/grant/ID/slug.html">
@@ -248,9 +243,53 @@ def extract_grants_from_category(url: str, category_name: str) -> list:
             "category":     category_name,
             "grant_url":    grant_url,
         })
-
-    log.info("  Found %d grant cards", len(grants))
     return grants
+
+
+def extract_grants_from_category(url: str, category_name: str,
+                                  max_pages: int = MAX_PAGES_PER_CATEGORY) -> list:
+    """Fetch up to max_pages pages from a GrantWatch category and return all grant cards."""
+    log.info("Extracting from: %s (up to %d pages)", category_name, max_pages)
+    all_grants = []
+    seen_titles: set = set()
+
+    for page_num in range(1, max_pages + 1):
+        page_url = url if page_num == 1 else f"{url}?pg={page_num}"
+        log.info("  Fetching page %d: %s", page_num, page_url)
+
+        resp = safe_get(page_url)
+        if not resp:
+            log.warning("  Could not fetch page %d — stopping pagination", page_num)
+            break
+
+        soup        = BeautifulSoup(resp.text, "lxml")
+        page_grants = _parse_cards_from_soup(soup, category_name)
+
+        if not page_grants:
+            log.info("  Page %d returned 0 cards — end of category", page_num)
+            break
+
+        # Detect duplicate-title pages (GrantWatch sometimes repeats page 1 for ?pg=N beyond last)
+        new_grants = [g for g in page_grants if g["title"] not in seen_titles]
+        if not new_grants:
+            log.info("  Page %d has only duplicates — end of pagination", page_num)
+            break
+
+        for g in new_grants:
+            seen_titles.add(g["title"])
+        all_grants.extend(new_grants)
+        log.info("  Page %d: %d new cards (total so far: %d)", page_num, len(new_grants), len(all_grants))
+
+        if len(page_grants) < 10:
+            # Sparse page indicates we're past the last real page
+            log.info("  Page %d is sparse (%d cards) — likely last page", page_num, len(page_grants))
+            break
+
+        if page_num < max_pages:
+            time.sleep(REQUEST_DELAY)
+
+    log.info("  Category '%s' total: %d grant cards", category_name, len(all_grants))
+    return all_grants
 
 
 # ── Stage 2: Filter ───────────────────────────────────────────────────────────

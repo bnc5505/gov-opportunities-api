@@ -214,8 +214,38 @@ class OpportunityBase(BaseModel):
     deadline: Optional[datetime] = None
     expected_award_date: Optional[datetime] = None
 
+    # page describing the grant (vs the application form)
+    opportunity_url: Optional[str] = Field(None, max_length=1000)
+
     # the link that the Apply button will point to
     application_url: Optional[str] = Field(None, max_length=1000)
+
+    # sponsor branding
+    logo_url: Optional[str] = Field(None, max_length=1000)
+    sponsor_website: Optional[str] = Field(None, max_length=1000)
+
+    # geographic scope
+    is_global: bool = False
+    locations: Optional[List[str]] = None  # list of regions or countries
+
+    # financial structure
+    cash_award: Optional[float] = None
+    equity_percentage: Optional[float] = None
+    safe_note: Optional[bool] = None
+
+    # application cost
+    fee_required: Optional[bool] = None
+    fee_amount: Optional[float] = None
+    cost_to_participate: Optional[float] = None
+
+    # rolling applications (no fixed deadline)
+    rolling: Optional[bool] = None
+
+    # taxonomy
+    tags: Optional[List[str]] = None
+    sdg_alignment: Optional[List[str]] = None
+    opportunity_gap_resources: Optional[List[str]] = None
+    industry: Optional[str] = Field(None, max_length=255)
 
     # contact info
     contact_name: Optional[str] = Field(None, max_length=255)
@@ -249,7 +279,23 @@ class OpportunityUpdate(BaseModel):
     posted_date: Optional[datetime] = None
     deadline: Optional[datetime] = None
     expected_award_date: Optional[datetime] = None
+    opportunity_url: Optional[str] = Field(None, max_length=1000)
     application_url: Optional[str] = Field(None, max_length=1000)
+    logo_url: Optional[str] = Field(None, max_length=1000)
+    sponsor_website: Optional[str] = Field(None, max_length=1000)
+    is_global: Optional[bool] = None
+    locations: Optional[List[str]] = None
+    cash_award: Optional[float] = None
+    equity_percentage: Optional[float] = None
+    safe_note: Optional[bool] = None
+    fee_required: Optional[bool] = None
+    fee_amount: Optional[float] = None
+    cost_to_participate: Optional[float] = None
+    rolling: Optional[bool] = None
+    tags: Optional[List[str]] = None
+    sdg_alignment: Optional[List[str]] = None
+    opportunity_gap_resources: Optional[List[str]] = None
+    industry: Optional[str] = Field(None, max_length=255)
     contact_name: Optional[str] = Field(None, max_length=255)
     contact_email: Optional[str] = Field(None, max_length=255)
     contact_phone: Optional[str] = Field(None, max_length=50)
@@ -289,8 +335,15 @@ class OpportunityListItem(BaseModel):
     eligibility_organization: bool
     award_min: Optional[float] = None
     award_max: Optional[float] = None
+    cash_award: Optional[float] = None
     deadline: Optional[datetime] = None
+    rolling: Optional[bool] = None
+    is_global: bool = False
+    logo_url: Optional[str] = None
+    opportunity_url: Optional[str] = None
     application_url: Optional[str] = None
+    tags: Optional[List[str]] = None
+    industry: Optional[str] = None
     agency: Optional[AgencyResponse] = None
     state: Optional[StateResponse] = None
     categories: List[CategoryResponse] = []
