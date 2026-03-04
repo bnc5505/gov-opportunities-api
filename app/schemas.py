@@ -1,26 +1,7 @@
-"""
-Pydantic schemas for GovGrants Hub API.
-
-Schemas are different from models. Models define the database tables.
-Schemas define what data looks like when it travels through the API,
-either coming in from a request or going out in a response.
-
-The pattern we follow throughout this file is:
-- Base: the shared fields between create and response
-- Create: what we expect when someone creates a record
-- Update: what we accept when someone edits a record, all fields optional
-- Response: what we send back, includes id and timestamps
-
-This pattern keeps things clean and makes it easy to control exactly
-what data is exposed through the API versus what stays internal.
-"""
-
 from datetime import datetime
 from typing import Optional, List, Any, Dict
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
-
-# State schemas
 
 class StateBase(BaseModel):
     code: str = Field(..., max_length=5)
@@ -38,11 +19,6 @@ class StateResponse(StateBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-# Source schemas
-# Sources are the websites and APIs that the scrapers pull from.
-# We expose limited fields here because most source management
-# is done through the admin interface, not the public API.
 
 class SourceBase(BaseModel):
     name: str = Field(..., max_length=255)
@@ -75,8 +51,6 @@ class SourceResponse(SourceBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Agency schemas
-
 class AgencyBase(BaseModel):
     code: str = Field(..., max_length=20)
     name: str = Field(..., max_length=255)
@@ -105,8 +79,6 @@ class AgencyResponse(AgencyBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Category schemas
-
 class CategoryBase(BaseModel):
     name: str = Field(..., max_length=100)
     slug: str = Field(..., max_length=100)
@@ -119,22 +91,12 @@ class CategoryCreate(CategoryBase):
     pass
 
 
-class CategoryUpdate(BaseModel):
-    name: Optional[str] = Field(None, max_length=100)
-    slug: Optional[str] = Field(None, max_length=100)
-    description: Optional[str] = None
-    display_order: Optional[int] = None
-    parent_id: Optional[int] = None
-
-
 class CategoryResponse(CategoryBase):
     id: int
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
-
-# Applicant type schemas
 
 class ApplicantTypeBase(BaseModel):
     name: str = Field(..., max_length=100)
@@ -147,20 +109,12 @@ class ApplicantTypeCreate(ApplicantTypeBase):
     pass
 
 
-class ApplicantTypeUpdate(BaseModel):
-    name: Optional[str] = Field(None, max_length=100)
-    description: Optional[str] = None
-    is_individual: Optional[bool] = None
-
-
 class ApplicantTypeResponse(ApplicantTypeBase):
     id: int
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
-
-# Opportunity document schemas
 
 class OpportunityDocumentBase(BaseModel):
     title: str = Field(..., max_length=255)
@@ -181,13 +135,7 @@ class OpportunityDocumentResponse(OpportunityDocumentBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Opportunity schemas
-# These are the most important schemas in the file.
-# The Opportunity model is the core of the platform.
-
 class OpportunityBase(BaseModel):
-    # opportunity_number is optional because state sources do not have one
-    opportunity_number: Optional[str] = Field(None, max_length=100)
     title: str = Field(..., max_length=500)
     description: Optional[str] = None
     summary: Optional[str] = Field(None, max_length=1000)
@@ -207,63 +155,32 @@ class OpportunityBase(BaseModel):
     award_min: Optional[float] = None
     award_max: Optional[float] = None
     total_funding: Optional[float] = None
-    expected_awards: Optional[int] = None
 
-    # dates
-    posted_date: Optional[datetime] = None
     deadline: Optional[datetime] = None
-    expected_award_date: Optional[datetime] = None
 
-    # page describing the grant (vs the application form)
-    opportunity_url: Optional[str] = Field(None, max_length=1000)
-
-    # the link that the Apply button will point to
-    application_url: Optional[str] = Field(None, max_length=1000)
-
-    # sponsor branding
-    logo_url: Optional[str] = Field(None, max_length=1000)
-    sponsor_website: Optional[str] = Field(None, max_length=1000)
-
-    # geographic scope
-    is_global: bool = False
-    locations: Optional[List[str]] = None  # list of regions or countries
-
-    # financial structure
-    cash_award: Optional[float] = None
-    equity_percentage: Optional[float] = None
-    safe_note: Optional[bool] = None
-
-    # application cost
-    fee_required: Optional[bool] = None
-    fee_amount: Optional[float] = None
-    cost_to_participate: Optional[float] = None
-
-    # rolling applications (no fixed deadline)
+    # rolling = no fixed deadline
     rolling: Optional[bool] = None
 
-    # taxonomy
+    # grant info page (vs the application form)
+    opportunity_url: Optional[str] = Field(None, max_length=1000)
+
+    # link the Apply button points to
+    application_url: Optional[str] = Field(None, max_length=1000)
+
     tags: Optional[List[str]] = None
-    sdg_alignment: Optional[List[str]] = None
     opportunity_gap_resources: Optional[List[str]] = None
     industry: Optional[str] = Field(None, max_length=255)
 
-    # contact info
     contact_name: Optional[str] = Field(None, max_length=255)
     contact_email: Optional[str] = Field(None, max_length=255)
-    contact_phone: Optional[str] = Field(None, max_length=50)
-
-    # federal records only
-    cfda_number: Optional[str] = Field(None, max_length=20)
 
 
 class OpportunityCreate(OpportunityBase):
-    # when creating through the API we accept category and applicant type IDs
     category_ids: Optional[List[int]] = []
     applicant_type_ids: Optional[List[int]] = []
 
 
 class OpportunityUpdate(BaseModel):
-    # every field is optional here so we can do partial updates
     title: Optional[str] = Field(None, max_length=500)
     description: Optional[str] = None
     summary: Optional[str] = Field(None, max_length=1000)
@@ -276,41 +193,24 @@ class OpportunityUpdate(BaseModel):
     award_min: Optional[float] = None
     award_max: Optional[float] = None
     total_funding: Optional[float] = None
-    posted_date: Optional[datetime] = None
     deadline: Optional[datetime] = None
-    expected_award_date: Optional[datetime] = None
+    rolling: Optional[bool] = None
     opportunity_url: Optional[str] = Field(None, max_length=1000)
     application_url: Optional[str] = Field(None, max_length=1000)
-    logo_url: Optional[str] = Field(None, max_length=1000)
-    sponsor_website: Optional[str] = Field(None, max_length=1000)
-    is_global: Optional[bool] = None
-    locations: Optional[List[str]] = None
-    cash_award: Optional[float] = None
-    equity_percentage: Optional[float] = None
-    safe_note: Optional[bool] = None
-    fee_required: Optional[bool] = None
-    fee_amount: Optional[float] = None
-    cost_to_participate: Optional[float] = None
-    rolling: Optional[bool] = None
     tags: Optional[List[str]] = None
-    sdg_alignment: Optional[List[str]] = None
     opportunity_gap_resources: Optional[List[str]] = None
     industry: Optional[str] = Field(None, max_length=255)
     contact_name: Optional[str] = Field(None, max_length=255)
     contact_email: Optional[str] = Field(None, max_length=255)
-    contact_phone: Optional[str] = Field(None, max_length=50)
     status: Optional[str] = None
     category_ids: Optional[List[int]] = None
     applicant_type_ids: Optional[List[int]] = None
 
 
 class OpportunityResponse(OpportunityBase):
-    # this is what we send back when someone requests a full opportunity detail
     id: int
     status: str
     data_quality_score: Optional[float] = None
-    classification_confidence: Optional[float] = None
-    last_verified_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     last_synced_at: Optional[datetime] = None
@@ -324,9 +224,8 @@ class OpportunityResponse(OpportunityBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+# Lighter version for search results — excludes full description
 class OpportunityListItem(BaseModel):
-    # a lighter version of OpportunityResponse used in search results
-    # we do not need to send the full description in a list view
     id: int
     title: str
     opportunity_type: str
@@ -335,11 +234,8 @@ class OpportunityListItem(BaseModel):
     eligibility_organization: bool
     award_min: Optional[float] = None
     award_max: Optional[float] = None
-    cash_award: Optional[float] = None
     deadline: Optional[datetime] = None
     rolling: Optional[bool] = None
-    is_global: bool = False
-    logo_url: Optional[str] = None
     opportunity_url: Optional[str] = None
     application_url: Optional[str] = None
     tags: Optional[List[str]] = None
@@ -350,8 +246,6 @@ class OpportunityListItem(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-# User schemas
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -389,8 +283,6 @@ class UserLogin(BaseModel):
     password: str
 
 
-# Saved opportunity schemas
-
 class SavedOpportunityBase(BaseModel):
     opportunity_id: int
     notes: Optional[str] = None
@@ -408,10 +300,6 @@ class SavedOpportunityResponse(SavedOpportunityBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-# Saved search schemas
-# search_criteria is stored as a dict here, not a JSON string.
-# Storing it as a proper dict is cleaner and avoids double-serialization issues.
 
 class SavedSearchBase(BaseModel):
     name: str = Field(..., max_length=255)
@@ -439,9 +327,6 @@ class SavedSearchResponse(SavedSearchBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Review queue schemas
-# These are used by admin users who review low-confidence pipeline records.
-
 class ReviewQueueResponse(BaseModel):
     id: int
     opportunity_id: int
@@ -461,9 +346,6 @@ class ReviewQueueUpdate(BaseModel):
     reviewer_notes: Optional[str] = None
 
 
-# Scrape log schemas
-# Read-only, these are only ever created by the pipeline, never through the API.
-
 class ScrapeLogResponse(BaseModel):
     id: int
     source_id: int
@@ -480,62 +362,13 @@ class ScrapeLogResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Filter and search schemas
-# This is what users send when they search for opportunities.
-
-class OpportunityFilterParams(BaseModel):
-    # text search across title and description
-    search: Optional[str] = None
-
-    # filter by type of opportunity
-    opportunity_type: Optional[str] = None
-
-    # filter by which state the opportunity is in
-    state_id: Optional[int] = None
-    state_code: Optional[str] = None
-
-    # filter by category
-    category_ids: Optional[List[int]] = None
-
-    # filter by who can apply
-    eligibility_individual: Optional[bool] = None
-    eligibility_organization: Optional[bool] = None
-
-    # filter by which agency is offering it
-    agency_id: Optional[int] = None
-
-    # filter by applicant type
-    applicant_type_ids: Optional[List[int]] = None
-
-    # filter by amount
-    min_amount: Optional[float] = None
-    max_amount: Optional[float] = None
-
-    # only show opportunities whose deadline is within this many days
-    closing_within_days: Optional[int] = None
-
-    # filter by status
-    status: Optional[str] = None
-
-    # pagination
-    page: int = Field(1, ge=1)
-    page_size: int = Field(20, ge=1, le=100)
-
-    # sorting
-    sort_by: Optional[str] = Field("deadline", description="deadline, posted_date, award_max, title")
-    sort_order: Optional[str] = Field("asc", pattern="^(asc|desc)$")
-
-
 class PaginatedOpportunityResponse(BaseModel):
-    # wraps a list of opportunities with pagination metadata
     total: int
     page: int
     page_size: int
     total_pages: int
     data: List[OpportunityListItem]
 
-
-# Auth token schemas
 
 class Token(BaseModel):
     access_token: str

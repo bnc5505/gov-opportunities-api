@@ -18,12 +18,12 @@ import logging
 from datetime import datetime
 from typing import List, Dict
 
-# ── Path setup ────────────────────────────────────────────────────────────────
 THIS_DIR     = os.path.dirname(os.path.abspath(__file__))   # scrapers/
 PROJECT_ROOT = os.path.dirname(THIS_DIR)                    # project root
 BASE_DIR     = os.path.join(THIS_DIR, "base")               # scrapers/base/
 
-sys.path.insert(0, BASE_DIR)   # finds state_scraper_template and base_scraper
+sys.path.insert(0, BASE_DIR)        # finds state_scraper_template and base_scraper
+sys.path.insert(0, PROJECT_ROOT)    # finds scrapers.pa.*, scrapers.md.* etc.
 
 log = logging.getLogger(__name__)
 logging.basicConfig(
@@ -33,12 +33,7 @@ logging.basicConfig(
 )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  SOURCE REGISTRY
-#  Each entry describes one grant source.
-#  "module" = scraper module to import and call run()
-#  "config" = dict passed into run()
-# ─────────────────────────────────────────────────────────────────────────────
+# Source registry — "module" is the scraper to import, "config" is passed to run()
 
 _GW = [
     "grant", "grants", "funding", "fund", "opportunity", "opportunities",
@@ -73,84 +68,45 @@ def _cfg(scraper_id, state, listing_url, base_url, domain, output_file,
 
 ALL_SOURCES: List[Dict] = [
 
-    # ══════════════════════════════════════════════════════════════════
-    #  NEW YORK
-    # ══════════════════════════════════════════════════════════════════
+    # New York
 
     {
         "state":  "NY", "name": "NY Empire State Development",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "ny_empire_state", "NY",
-            "https://esd.ny.gov/doing-business-ny/funding-opportunities",
-            "https://esd.ny.gov", "esd.ny.gov",
-            "ny_empire_state_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.ny.ny_empire_scraper",
     },
     {
         "state":  "NY", "name": "NY Dept of State – Community Grants",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "ny_dos", "NY",
-            "https://dos.ny.gov/local-government/grants",
-            "https://dos.ny.gov", "dos.ny.gov",
-            "ny_dos_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.ny.ny_dos_scraper",
     },
     {
         "state":  "NY", "name": "NY State Council on the Arts",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "ny_arts", "NY",
-            "https://arts.ny.gov/grants",
-            "https://arts.ny.gov", "arts.ny.gov",
-            "ny_arts_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.ny.ny_nysca_scraper",
     },
     {
         "state":  "NY", "name": "NY Dept of Health – Grant Programs",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "ny_health", "NY",
-            "https://www.health.ny.gov/funding/",
-            "https://www.health.ny.gov", "health.ny.gov",
-            "ny_health_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.ny.ny_health_scraper",
     },
     {
         "state":  "NY", "name": "NY Office of Children & Family Services",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "ny_ocfs", "NY",
-            "https://ocfs.ny.gov/grants/",
-            "https://ocfs.ny.gov", "ocfs.ny.gov",
-            "ny_ocfs_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.ny.ny_ocfs_scraper",
     },
     {
         "state":  "NY", "name": "NY State Education Dept – Grants",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "ny_sed", "NY",
-            "https://www.nysed.gov/grants",
-            "https://www.nysed.gov", "nysed.gov",
-            "ny_sed_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.ny.ny_nysed_scraper",
     },
     {
         "state":  "NY", "name": "NY Homes & Community Renewal",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "ny_hcr", "NY",
-            "https://hcr.ny.gov/grants",
-            "https://hcr.ny.gov", "hcr.ny.gov",
-            "ny_hcr_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.ny.ny_homes_scraper",
     },
 
-    # ══════════════════════════════════════════════════════════════════
-    #  MARYLAND
-    # ══════════════════════════════════════════════════════════════════
+    # Maryland
 
     {
         "state":  "MD", "name": "MD Dept of Transportation – Grants",
@@ -213,9 +169,7 @@ ALL_SOURCES: List[Dict] = [
         ),
     },
 
-    # ══════════════════════════════════════════════════════════════════
-    #  WASHINGTON D.C.
-    # ══════════════════════════════════════════════════════════════════
+    # Washington D.C.
 
     {
         "state":  "DC", "name": "DC DMPED – Economic Development Grants",
@@ -278,80 +232,42 @@ ALL_SOURCES: List[Dict] = [
         ),
     },
 
-    # ══════════════════════════════════════════════════════════════════
-    #  PENNSYLVANIA
-    # ══════════════════════════════════════════════════════════════════
-
+    # Pennsylvania
     # NOTE: PA DCED (pa_dced_scraper.py) is run separately in daily_run.py
     # because it has its own deep multi-layer scraper.
-    # The sources below are additional PA sources.
 
     {
         "state":  "PA", "name": "PA Official Grants Directory",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "pa_grants_dir", "PA",
-            "https://www.pa.gov/guides/grants/",
-            "https://www.pa.gov", "pa.gov",
-            "pa_grants_directory_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.pa.pa_gov_grants_scraper",
     },
     {
         "state":  "PA", "name": "PA Dept of Labor & Industry – Workforce Grants",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "pa_dli", "PA",
-            "https://www.dli.pa.gov/Businesses/Workforce-Development/Pages/Grants.aspx",
-            "https://www.dli.pa.gov", "dli.pa.gov",
-            "pa_dli_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.pa.pa_dli_scraper",
     },
     {
         "state":  "PA", "name": "PA DCNR – Conservation & Recreation Grants",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "pa_dcnr", "PA",
-            "https://www.dcnr.pa.gov/Grants/Pages/default.aspx",
-            "https://www.dcnr.pa.gov", "dcnr.pa.gov",
-            "pa_dcnr_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.pa.pa_dcnr_scraper",
     },
     {
         "state":  "PA", "name": "PennVEST – Water & Infrastructure Funding",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "pa_pennvest", "PA",
-            "https://www.pennvestinvestments.com/",
-            "https://www.pennvestinvestments.com", "pennvestinvestments.com",
-            "pa_pennvest_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.pa.pa_pennvest_scraper",
     },
     {
         "state":  "PA", "name": "PEMA – Emergency Management Grants",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "pa_pema", "PA",
-            "https://www.pema.pa.gov/Grants/Pages/default.aspx",
-            "https://www.pema.pa.gov", "pema.pa.gov",
-            "pa_pema_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.pa.pa_pema_scraper",
     },
     {
         "state":  "PA", "name": "PA Dept of Agriculture – Grants",
-        "module": "state_scraper_template",
-        "config": _cfg(
-            "pa_agriculture", "PA",
-            "https://www.agriculture.pa.gov/Grants/Pages/default.aspx",
-            "https://www.agriculture.pa.gov", "agriculture.pa.gov",
-            "pa_agriculture_grants_raw.json",
-        ),
+        "type":   "custom",
+        "module": "scrapers.pa.pa_agriculture_scraper",
     },
 ]
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  RUNNER
-# ═══════════════════════════════════════════════════════════════════
 
 def run_scraper(source: Dict) -> Dict:
     """Run one scraper and return stats."""
@@ -363,11 +279,16 @@ def run_scraper(source: Dict) -> Dict:
 
     try:
         module = importlib.import_module(source["module"])
-        grants = module.run(
-            config=source["config"],
-            save_json=True,
-            load_db=False,
-        )
+
+        # Custom scrapers have config baked in; template scrapers receive a config dict.
+        if source.get("type") == "custom":
+            grants = module.run(save_json=True)
+        else:
+            grants = module.run(
+                config=source["config"],
+                save_json=True,
+                load_db=False,
+            )
 
         active  = [g for g in grants if g.get("status") == "active"]
         rolling = [g for g in grants if g.get("rolling")]
@@ -379,10 +300,17 @@ def run_scraper(source: Dict) -> Dict:
             f"rolling={len(rolling)} review={len(review)} no_date={len(no_date)}"
         )
 
+        cfg = source.get("config", {})
+        out_file = (
+            os.path.join(os.path.join(PROJECT_ROOT, "data", source["state"].lower()),
+                         cfg["output_file"])
+            if cfg else None
+        )
+
         return {
             "source":       source["name"],
             "state":        source["state"],
-            "output_file":  os.path.join(DATA_DIR, source["config"]["output_file"]),
+            "output_file":  out_file,
             "total":        len(grants),
             "active":       len(active),
             "rolling":      len(rolling),
@@ -423,7 +351,6 @@ def run_all(states: List[str] = None) -> List[Dict]:
         result = run_scraper(source)
         results.append(result)
 
-    # ── Summary ───────────────────────────────────────────────────────
     duration = (datetime.now() - start).total_seconds()
 
     print(f"\n{'='*70}")
@@ -448,7 +375,6 @@ def run_all(states: List[str] = None) -> List[Dict]:
     print(f"  Output directory:     {os.path.join(PROJECT_ROOT, 'data', '<state>')}")
     print(f"{'='*70}\n")
 
-    # Save run summary
     summary = {
         "run_at":       datetime.utcnow().isoformat(),
         "duration_sec": duration,
@@ -462,10 +388,6 @@ def run_all(states: List[str] = None) -> List[Dict]:
 
     return results
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  CLI
-# ═══════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run all state grant scrapers")
