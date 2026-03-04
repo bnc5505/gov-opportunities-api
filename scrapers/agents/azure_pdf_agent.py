@@ -29,7 +29,6 @@ def extract_grant_with_azure_ai(pdf_path: str) -> Optional[Dict]:
     Returns:
         Dictionary with extracted grant data
     """
-    # Get Azure OpenAI credentials from Key Vault or .env fallback
     api_key = settings.azure_openai_api_key
     endpoint = settings.azure_openai_endpoint
     deployment = settings.azure_openai_deployment
@@ -38,13 +37,10 @@ def extract_grant_with_azure_ai(pdf_path: str) -> Optional[Dict]:
         print("ERROR: Azure OpenAI credentials not found. Check Key Vault or .env")
         return None
     
-    # Extract text from PDF
     print(f"Reading PDF: {pdf_path}")
     try:
         with open(pdf_path, 'rb') as file:
             pdf_reader = PyPDF2.PdfReader(file)
-            
-            # Extract text from first 10 pages
             pdf_text = ""
             num_pages = min(10, len(pdf_reader.pages))
             
@@ -58,7 +54,6 @@ def extract_grant_with_azure_ai(pdf_path: str) -> Optional[Dict]:
         print(f"Error reading PDF: {e}")
         return None
     
-    # Initialize Azure OpenAI client
     print("Sending to Azure OpenAI for analysis...")
     
     try:
@@ -102,10 +97,7 @@ Return ONLY valid JSON, no other text or markdown formatting."""
             max_tokens=2000
         )
         
-        # Extract the JSON from response
         response_text = response.choices[0].message.content
-        
-        # Clean up response (remove markdown if present)
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0]
         elif "```" in response_text:
@@ -168,19 +160,15 @@ def process_dc_grants_with_azure_ai():
         print(f"\n{'='*60}")
         print(f"Processing: {pdf_info['title']}")
         print(f"{'='*60}")
-        
-        # Download PDF
+
         if download_pdf(pdf_info['url'], pdf_info['filename']):
-            # Extract with Azure OpenAI
             grant_data = extract_grant_with_azure_ai(pdf_info['filename'])
-            
+
             if grant_data:
-                # Add metadata
                 grant_data['application_url'] = pdf_info['url']
                 grant_data['agency'] = 'Office of Victim Services and Justice Grants'
                 grant_data['state'] = 'DC'
                 grant_data['opportunity_type'] = 'grant'
-                
                 grants.append(grant_data)
                 
                 print(f"\n✓ Extracted Data:")
@@ -189,13 +177,11 @@ def process_dc_grants_with_azure_ai():
                 print(f"  Award: ${grant_data.get('award_min', 'N/A')} - ${grant_data.get('award_max', 'N/A')}")
                 print(f"  Description: {grant_data.get('description', 'N/A')[:100]}...")
             
-            # Clean up temp file
-            try:
+            try:  # clean up temp file
                 os.remove(pdf_info['filename'])
             except:
                 pass
     
-    # Save results
     if grants:
         output = {
             'scraped_at': datetime.now().isoformat(),

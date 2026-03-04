@@ -1,0 +1,761 @@
+{
+  "scraped_at": "2026-03-03T19:02:47.355840",
+  "source": "https://dos.ny.gov/funding-bid-opportunities",
+  "state": "NY",
+  "total": 13,
+  "grants": [
+    {
+      "title": "Local Government Training Program",
+      "summary": "Provides training and assistance in land use planning, regulation, and local governance for local officials in New York State.",
+      "description": "The Local Government Training Program, offered by the New York Department of State, provides workshops and online courses to teach land use planning, regulation, and local governance procedures to local elected and appointed officials. These trainings benefit members of planning boards, zoning boards of appeals, elected officials, enforcement officials, and other municipal employees. The program includes on-site courses, online interactive courses, and recorded webinars, all of which count toward the mandatory annual training requirement for certain officials. To schedule a workshop or obtain assistance, applicants can contact the program directly.",
+      "deadline": null,
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include local elected and appointed officials, members of planning boards, zoning boards of appeals, enforcement officials, and municipal employees in New York State.",
+      "eligible_applicant_types": [
+        "Local governments",
+        "Municipal employees",
+        "Planning boards",
+        "Zoning boards of appeals"
+      ],
+      "tags": [
+        "Training",
+        "Land Use",
+        "Local Governance",
+        "Workshops",
+        "Technical Assistance"
+      ],
+      "industry": "Government",
+      "areas_of_focus": [
+        "Training",
+        "Technical Assistance",
+        "Capacity Building"
+      ],
+      "sdg_alignment": [],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": "518-473-3355",
+      "opportunity_url": "https://dos.ny.gov/training-assistance",
+      "application_url": "https://dos.ny.gov/training-assistance",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Applicants must be local elected or appointed officials in New York State.",
+        "Members of planning boards and zoning boards of appeals must complete four hours of training annually.",
+        "Training courses are available on-site, online, and as recorded webinars."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:00:54.507751",
+      "data_quality_score": 0.67,
+      "needs_review": true,
+      "status": "rolling"
+    },
+    {
+      "title": "Coastal Management Program Grant",
+      "summary": "Funds initiatives to protect, preserve, and enhance coastal resources in New York State.",
+      "description": "The Coastal Management Program provides regulatory, financial, and technical assistance to promote the wise use and protection of coastal resources. It aims to preserve, protect, enhance, and restore natural resources in the state's coastal areas while offering opportunities for public enjoyment of coastal amenities. Eligible applicants include waterfront communities and organizations working on coastal revitalization and sustainability projects. Applications can be submitted through the Department of State's funding portal.",
+      "deadline": null,
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include waterfront communities and organizations working on coastal revitalization and sustainability projects.",
+      "eligible_applicant_types": [
+        "Waterfront communities",
+        "Nonprofit organizations",
+        "Local governments"
+      ],
+      "tags": [
+        "Coastal Management",
+        "Environmental Protection",
+        "Waterfront Revitalization",
+        "Sustainability",
+        "Technical Assistance"
+      ],
+      "industry": "Environmental Conservation",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
+      ],
+      "sdg_alignment": [
+        "SDG 14: Life Below Water",
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://dos.ny.gov/coastal-management",
+      "application_url": "https://dos.ny.gov/coastal-management",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Projects must focus on coastal resource protection or revitalization.",
+        "Applicants must be located in New York State.",
+        "Applications must align with the goals of the Coastal Management Program."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:01:01.359086",
+      "data_quality_score": 0.67,
+      "needs_review": true,
+      "status": "rolling"
+    },
+    {
+      "title": "Local Waterfront Revitalization Program (LWRP)",
+      "summary": "This grant funds planning and implementation projects to revitalize waterfront areas across New York State.",
+      "description": "The Local Waterfront Revitalization Program (LWRP) is New York State's primary program for partnering with waterfront communities to address waterway issues, improve water quality, guide development, promote public waterfront access, and redevelop underutilized waterfronts. Municipalities can develop long-term plans for land and water use, which are approved at local, state, and federal levels. Once approved, municipalities become eligible for funding to implement prioritized projects. Interested applicants can learn more through the Department of State's resources and training series.",
+      "deadline": null,
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants are municipalities within New York State with approved Local Waterfront Revitalization Programs.",
+      "eligible_applicant_types": [
+        "Municipalities"
+      ],
+      "tags": [
+        "Waterfront",
+        "Revitalization",
+        "Planning",
+        "Infrastructure",
+        "Environment"
+      ],
+      "industry": "Community Development",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities",
+        "SDG 13: Climate Action"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://dos.ny.gov/local-waterfront-revitalization-program",
+      "application_url": "https://dos.ny.gov/local-waterfront-revitalization-program",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Municipality must be located in New York State.",
+        "Must have an approved Local Waterfront Revitalization Program.",
+        "Projects must align with state and local coastal policies."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:01:09.714016",
+      "data_quality_score": 0.67,
+      "needs_review": true,
+      "status": "rolling"
+    },
+    {
+      "title": "Brownfield Opportunity Area Program",
+      "summary": "Provides grant funding and technical assistance to communities for redeveloping brownfields and other vacant or abandoned sites.",
+      "description": "The Brownfield Opportunity Area (BOA) Program empowers communities to revitalize neighborhoods affected by brownfields. It offers grant funding and technical assistance to develop area-wide, community-based plans for redeveloping brownfields and other vacant or abandoned sites. The program supports planning, designation, and implementation phases, enabling municipalities and private sector partners to realize community-supported redevelopment goals. Designated BOA communities can access additional state funding and assistance to jumpstart redevelopment. Applications for BOA designation and funding are available through the New York State Department of State.",
+      "deadline": null,
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include municipalities and community organizations seeking to redevelop brownfields and other vacant or abandoned sites.",
+      "eligible_applicant_types": [
+        "Municipalities",
+        "Community Organizations"
+      ],
+      "tags": [
+        "Brownfields",
+        "Redevelopment",
+        "Community Planning",
+        "Technical Assistance",
+        "Grant Funding"
+      ],
+      "industry": "Community Development",
+      "areas_of_focus": [
+        "Capital",
+        "Technical Assistance",
+        "Capacity Building",
+        "Training"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://dos.ny.gov/brownfield-redevelopment",
+      "application_url": "https://dos.ny.gov/boa-determination-conformance-application-form-and-instructions",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Applicants must be located in New York State.",
+        "Projects must focus on brownfields or vacant/abandoned sites.",
+        "Applications must include a community-supported redevelopment plan."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:01:21.579462",
+      "data_quality_score": 0.67,
+      "needs_review": true,
+      "status": "rolling"
+    },
+    {
+      "title": "Countywide Resilience Planning Program",
+      "summary": "Supports counties in developing plans to address climate change vulnerabilities and implement sustainable projects.",
+      "description": "The Countywide Resilience Planning Program provides assistance to counties in New York State to develop strategies for addressing vulnerabilities related to climate change, such as flooding and storm surge. The program emphasizes sustainable project implementation and proactive planning to reduce risks and enhance community resilience. Counties can access resources and technical support to create inclusive and adaptable plans. Applications are encouraged from counties seeking to improve resilience through innovative measures.",
+      "deadline": null,
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants are counties within New York State.",
+      "eligible_applicant_types": [
+        "Counties"
+      ],
+      "tags": [
+        "Resilience",
+        "Climate Change",
+        "Sustainability",
+        "Risk Reduction",
+        "Planning"
+      ],
+      "industry": "Environmental Planning",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
+      ],
+      "sdg_alignment": [
+        "SDG 13: Climate Action"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://dos.ny.gov/resilience-planning",
+      "application_url": "https://dos.ny.gov/resilience-planning",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Applicant must be a county in New York State.",
+        "Proposals must address climate change vulnerabilities.",
+        "Plans should include sustainable project implementation."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:01:27.984409",
+      "data_quality_score": 0.67,
+      "needs_review": true,
+      "status": "rolling"
+    },
+    {
+      "title": "Grants Management Transition to Statewide Financial System (SFS)",
+      "summary": "This grant supports the transition of New York State's grants management activities from the Grants Gateway to the Statewide Financial System (SFS).",
+      "description": "The grant facilitates the transition of grants management activities from the Grants Gateway to the Statewide Financial System (SFS), which is New York State's accounting and financial management system. It aims to streamline processes such as prequalification applications, bid opportunities, contract approvals, and payment submissions. Grantees and agencies will collaborate using SFS for various aspects of the grants lifecycle. Training sessions and resources will be provided to assist with the transition. Applications and contracts will be converted where applicable, and grantees must ensure access to the SFS Vendor Portal to participate.",
+      "deadline": "12/15/2023",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Organizations registered with the Grants Gateway or holding an SFS Vendor ID are eligible. Prequalification status must be renewed if expiring before the transition.",
+      "eligible_applicant_types": [
+        "Organizations",
+        "Vendors"
+      ],
+      "tags": [
+        "Grants Management",
+        "SFS Transition",
+        "Prequalification",
+        "Training",
+        "New York State"
+      ],
+      "industry": "Government",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
+      ],
+      "sdg_alignment": [],
+      "contact_name": null,
+      "contact_email": "helpdesk@sfs.ny.gov",
+      "contact_phone": "(855) 233-8363",
+      "opportunity_url": "https://dos.ny.gov/grants-gateway",
+      "application_url": "https://www.sfs.ny.gov/",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://www.sfs.ny.gov/",
+      "key_requirements": [
+        "Organizations must have an SFS Vendor ID or Grants Gateway registration.",
+        "Prequalification applications must be submitted by December 15, 2023.",
+        "Access to the SFS Vendor Portal is required.",
+        "Grantees must download historical data from the Grants Gateway within 6 months of transition."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:01:36.475819",
+      "data_quality_score": 0.9,
+      "needs_review": false,
+      "status": "archived"
+    },
+    {
+      "title": "Local Government Efficiency Citizens Re-Organization Empowerment Grant (CREG) Program",
+      "summary": "Funds projects that improve local government efficiency through reorganization or consolidation efforts.",
+      "description": "The Local Government Efficiency Citizens Re-Organization Empowerment Grant (CREG) Program supports initiatives aimed at improving the efficiency of local governments in New York State. This includes efforts such as reorganization, consolidation, and shared services among municipalities. Eligible applicants include local governments seeking to reduce costs and improve service delivery. Applications are accepted on a rolling basis, with deadlines on the first Wednesday of every month. Interested parties can access guidance documents and application forms online or contact the Division of Local Government Services for assistance.",
+      "deadline": "03/04/2026",
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": "11/29/2021",
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include local governments in New York State.",
+      "eligible_applicant_types": [
+        "Local governments"
+      ],
+      "tags": [
+        "Government Efficiency",
+        "Reorganization",
+        "Consolidation",
+        "Shared Services",
+        "New York State"
+      ],
+      "industry": "Government",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": "(518) 473-3355",
+      "opportunity_url": "https://dos.ny.gov/local-government-efficiency-citizens-re-organization-empowerment-grant-creg-program",
+      "application_url": "https://dos.ny.gov/2020-22-request-applications-guidance-document",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Applicants must be local governments in New York State.",
+        "Projects must aim to improve government efficiency.",
+        "Applications must be submitted by the first Wednesday of each month."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:02:01.630585",
+      "data_quality_score": 0.9,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "Office for New Americans Mobile English Program (RFA # 25-ONA-63)",
+      "summary": "This grant funds the development and maintenance of a mobile English platform to assist new Americans in New York State with limited English proficiency.",
+      "description": "The grant aims to expand mobile English programming for immigrants in New York State, providing accessible ESOL lessons via mobile devices. The program targets individuals with limited English proficiency, representing over 13% of New Yorkers, and ensures services are free of charge. Applicants must develop a platform accessible to diverse populations, including those with disabilities, and provide coaching and outreach materials. Applications must meet strict security and accessibility standards, and services must be available 24/7. Eligible applicants include for-profit and not-for-profit organizations capable of doing business in New York State.",
+      "deadline": "03/25/2026",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": "01/30/2026",
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include for-profit and not-for-profit organizations capable of doing business in New York State. Not-for-profits must be pre-qualified through the Statewide Financial System.",
+      "eligible_applicant_types": [
+        "For-profit organizations",
+        "Not-for-profit organizations"
+      ],
+      "tags": [
+        "English language",
+        "Immigrants",
+        "Mobile platform",
+        "Education",
+        "New York State"
+      ],
+      "industry": "Education",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
+      ],
+      "sdg_alignment": [
+        "SDG 4: Quality Education"
+      ],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": null,
+      "opportunity_url": "https://dos.ny.gov/office-new-americans-mobile-english-program-rfa-25-ona-63",
+      "application_url": "https://dos.ny.gov/procurement-forms",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Applicants must be for-profit or not-for-profit organizations capable of doing business in New York State.",
+        "Not-for-profit organizations must be pre-qualified through the Statewide Financial System.",
+        "Platform must comply with NY Information Technology Services security policies and standards.",
+        "Services must be accessible to individuals with disabilities and available in 16 specified languages.",
+        "Platform must be accessible via non-smart mobile phones and available 24/7."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:02:10.347506",
+      "data_quality_score": 0.9,
+      "needs_review": false,
+      "status": "active"
+    },
+    {
+      "title": "Resilient Design Development for Coastal Lakeshore Economy and Resiliency RFP",
+      "summary": "This grant funds projects focused on resilient design development to support coastal lakeshore economies and improve resiliency.",
+      "description": "The Resilient Design Development for Coastal Lakeshore Economy and Resiliency RFP aims to support projects that enhance the economic and environmental resilience of coastal lakeshore areas. The program is designed to benefit local governments, organizations, and communities by providing funding for innovative design and development initiatives. Applicants must follow the instructions outlined in the RFP document to submit their proposals. The grant is temporarily suspended, and updates will be provided once available.",
+      "deadline": "01/26/2026",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": "12/15/2025",
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include local governments, organizations, and entities working on coastal lakeshore resiliency projects.",
+      "eligible_applicant_types": [
+        "Local Governments",
+        "Organizations"
+      ],
+      "tags": [
+        "Resiliency",
+        "Coastal Development",
+        "Economic Growth",
+        "Environmental Sustainability",
+        "Design"
+      ],
+      "industry": "Environmental Planning",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities",
+        "SDG 13: Climate Action"
+      ],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": null,
+      "opportunity_url": "https://dos.ny.gov/resilient-design-development-coastal-lakeshore-economy-and-resiliency-rfp",
+      "application_url": "https://dos.ny.gov/resilient-design-development-coastal-lakeshore-economy-and-resiliency-rfp",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Projects must focus on coastal lakeshore resiliency.",
+        "Applicants must follow instructions in the RFP document.",
+        "Applications must be submitted by the deadline."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:02:19.811004",
+      "data_quality_score": 0.9,
+      "needs_review": false,
+      "status": "archived"
+    },
+    {
+      "title": "2025-2026 Local Government Efficiency Grant Program",
+      "summary": "Funds projects aimed at improving local government efficiency in New York State.",
+      "description": "The 2025-2026 Local Government Efficiency Grant Program supports initiatives that enhance the efficiency of local governments in New York State. Eligible projects may include shared services, consolidation, and other efforts to reduce costs and improve service delivery. Applications are submitted through the New York State Consolidated Funding Application (CFA). Informational webinars and guidance documents are available to assist applicants. The program is managed by the New York State Department of State, Division of Local Government Services.",
+      "deadline": "02/04/2026",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": "12/08/2025",
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include local governments in New York State.",
+      "eligible_applicant_types": [
+        "Local governments"
+      ],
+      "tags": [
+        "Local government",
+        "Efficiency",
+        "Shared services",
+        "Consolidation",
+        "Cost reduction"
+      ],
+      "industry": "Government",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
+      ],
+      "sdg_alignment": [],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": "(518) 473-3355",
+      "opportunity_url": "https://dos.ny.gov/2025-2026-local-government-efficiency-grant-program",
+      "application_url": "https://apps.cio.ny.gov/apps/cfa",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Applicants must be local governments in New York State.",
+        "Projects must aim to improve efficiency or reduce costs.",
+        "Applications must be submitted through the New York State Consolidated Funding Application (CFA)."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:02:26.889011",
+      "data_quality_score": 0.9,
+      "needs_review": false,
+      "status": "recently_closed"
+    },
+    {
+      "title": "Office for New Americans Mobile English Program (RFA# 23-ONA-16)",
+      "summary": "This grant funds programs to provide mobile English language learning services for new Americans in New York State.",
+      "description": "The Office for New Americans Mobile English Program aims to support new Americans by providing accessible English language learning services through mobile platforms. The program is designed to help immigrants integrate into their communities and improve their language skills for better opportunities. Eligible applicants must submit their proposals by the specified deadline. Applications are reviewed by the New York State Department of State, and funding is awarded to programs that meet the outlined criteria.",
+      "deadline": "09/25/2025",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": "08/14/2025",
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible organizations must provide services to new Americans in New York State and meet the program's requirements.",
+      "eligible_applicant_types": [
+        "Nonprofit organizations",
+        "Community-based organizations"
+      ],
+      "tags": [
+        "English language learning",
+        "Immigrant support",
+        "New Americans",
+        "Mobile services",
+        "Education"
+      ],
+      "industry": "Education",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Training",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 4: Quality Education",
+        "SDG 10: Reduced Inequalities"
+      ],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": null,
+      "opportunity_url": "https://dos.ny.gov/office-new-americans-mobile-english-program-rfa-23-ona-16",
+      "application_url": "https://dos.ny.gov/office-new-americans-mobile-english-program-rfa-23-ona-16",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Applicants must be organizations serving new Americans in New York State.",
+        "Proposals must align with the program's goals of providing mobile English language learning services.",
+        "Applications must be submitted by the specified deadline."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:02:33.110168",
+      "data_quality_score": 0.9,
+      "needs_review": false,
+      "status": "archived"
+    },
+    {
+      "title": "Community Services Block Grant",
+      "summary": "Funds non-profit organizations to assist low-income and disadvantaged families across New York State.",
+      "description": "The Community Services Block Grant (CSBG) provides funding to non-profit organizations dedicated to helping low-income and disadvantaged families across New York State. Services include employment assistance and training, emergency food and housing, child care, home heating, and more. The program aims to strengthen communities and improve living conditions for families. Applicants must meet income eligibility requirements, and funding is distributed through designated Community Action Agencies (CAAs). For more information, contact your local CAA or visit the program's website.",
+      "deadline": null,
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Non-profit organizations serving families with household incomes at or below 200% of the Federal Poverty Guidelines.",
+      "eligible_applicant_types": [
+        "Non-profit organizations",
+        "Community Action Agencies"
+      ],
+      "tags": [
+        "low-income families",
+        "poverty alleviation",
+        "community services",
+        "New York State",
+        "non-profit funding"
+      ],
+      "industry": "Social Services",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Training",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 1: No Poverty",
+        "SDG 8: Decent Work and Economic Growth"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://dos.ny.gov/community-services-block-grant",
+      "application_url": "https://dos.ny.gov/community-services-block-grant",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://dos.ny.gov",
+      "key_requirements": [
+        "Applicants must be non-profit organizations.",
+        "Applicants must serve families with household incomes at or below 200% of the Federal Poverty Guidelines.",
+        "Funding is distributed through designated Community Action Agencies."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:02:39.985506",
+      "data_quality_score": 0.67,
+      "needs_review": true,
+      "status": "rolling"
+    },
+    {
+      "title": "Ukraine Refugee Health Program",
+      "summary": "Funds capacity-building initiatives to support health services for Ukrainian refugees.",
+      "description": "The Ukraine Refugee Health Program provides funding to enhance health services for Ukrainian refugees in New York State. Administered by the New York State Office of Mental Health (OMH), this grant aims to strengthen community-based organizations and improve access to critical health resources for displaced individuals. Eligible applicants can apply through the provided link, ensuring equitable distribution of resources to support vulnerable populations.",
+      "deadline": "03/19/2026",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Open to community-based organizations providing health services to Ukrainian refugees.",
+      "eligible_applicant_types": [
+        "Community-based organizations",
+        "Nonprofits"
+      ],
+      "tags": [
+        "Health",
+        "Refugees",
+        "Capacity Building",
+        "Mental Health",
+        "Equity"
+      ],
+      "industry": "Healthcare",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 3: Good Health and Well-being"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://dos.ny.gov/office-faith-and-nonprofit-development-services",
+      "application_url": "https://omh.ny.gov/ukraine-refugee-health-program",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://omh.ny.gov",
+      "key_requirements": [
+        "Must be a community-based organization",
+        "Must provide health services to Ukrainian refugees",
+        "Must operate within New York State"
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T19:02:46.850575",
+      "data_quality_score": 0.82,
+      "needs_review": false,
+      "status": "active"
+    }
+  ]
+}

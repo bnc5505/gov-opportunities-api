@@ -1,0 +1,1285 @@
+{
+  "scraped_at": "2026-03-03T22:59:33.269683",
+  "source": "https://hcr.ny.gov/funding-opportunities",
+  "state": "NY",
+  "total": 22,
+  "grants": [
+    {
+      "title": "Find Affordable Housing | Homes and Community Renewal",
+      "summary": "Supports individuals and families in finding affordable, safe, and accessible housing across New York State.",
+      "description": "This initiative provides resources to help individuals and families find affordable housing options in New York State. It includes tools to search rental listings, apply for housing lotteries, and access programs like Section 8 and Mitchell-Lama housing. The program benefits low- and middle-income families, seniors, and individuals seeking safe and accessible housing. Applications can be submitted online through the housing search website or NYC Housing Connect.",
+      "deadline": "08/03/2026",
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": true,
+      "eligibility_organization": false,
+      "eligibility_notes": "Low- and middle-income individuals, families, and seniors seeking affordable housing in New York State.",
+      "eligible_applicant_types": [
+        "Individuals",
+        "Families",
+        "Seniors"
+      ],
+      "tags": [
+        "Affordable Housing",
+        "Section 8",
+        "Housing Lotteries",
+        "Mitchell-Lama",
+        "NY State"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capital",
+        "Networks",
+        "Capacity Building"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/find-affordable-housing",
+      "application_url": "https://housingsearch.ny.gov",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Must be a resident of New York State",
+        "Income eligibility based on program requirements",
+        "Application submission through designated portals"
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:57:19.972074",
+      "data_quality_score": 0.82,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "Section 8 Housing Programs",
+      "summary": "Provides rental assistance, supportive services, and housing resources for eligible individuals and families.",
+      "description": "The Section 8 Housing Programs offer rental assistance and housing resources to help eligible individuals and families afford safe, decent housing. Programs include the Housing Choice Voucher (HCV) Program, Emergency Housing Voucher Program, Family Self-Sufficiency Program, Project-Based Contract Administration Program, Stability Voucher Program, and the HCV Homeownership Program. These initiatives aim to support economic independence, prevent homelessness, and provide access to well-resourced neighborhoods. Applications and eligibility details are available through the MyHousing Portal and program-specific pages.",
+      "deadline": "08/03/2026",
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": true,
+      "eligibility_organization": false,
+      "eligibility_notes": "Eligible individuals and families include those experiencing homelessness, at risk of housing instability, veterans, and Housing Choice Voucher participants.",
+      "eligible_applicant_types": [
+        "Individuals",
+        "Families",
+        "Veterans"
+      ],
+      "tags": [
+        "Housing Assistance",
+        "Rental Support",
+        "Economic Independence",
+        "Homelessness Prevention",
+        "Homeownership"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance",
+        "Mentorship",
+        "Training"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/section8",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Must meet income eligibility requirements",
+        "Must be experiencing homelessness or at risk of housing instability",
+        "Veterans and Housing Choice Voucher participants are eligible"
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:57:25.236419",
+      "data_quality_score": 0.82,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "PHFL 610 - Private Housing Finance Law Section 610",
+      "summary": "Allows owners of certain affordable housing properties to collect increased tenant- or project-based subsidies above the legal rent.",
+      "description": "The PHFL 610 program provides a mechanism for owners of affordable housing properties within the NYC Housing Preservation and Development portfolio, as well as those in the NYS Division of Housing and Community Renewal, NYS Housing Finance Agency, or NYS Housing Trust Fund Corporation portfolio, to collect subsidies exceeding the legal rent. This initiative aims to support the financial sustainability of affordable housing projects. Owners can access additional information through dedicated pages for DHCR, HFA, HTFC, and HPD. Applications and resources are available online, and assistance is provided through borough rent offices and the NYS Rent Connect platform.",
+      "deadline": "08/03/2026",
+      "rolling": true,
+      "is_annual": false,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Owners of affordable housing properties within specified portfolios (NYC HPD, NYS DHCR, HFA, HTFC) are eligible.",
+      "eligible_applicant_types": [
+        "Affordable housing property owners"
+      ],
+      "tags": [
+        "Affordable Housing",
+        "Subsidies",
+        "Rent Regulation",
+        "Housing Finance",
+        "Community Renewal"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": "1 (833) 499-0343",
+      "opportunity_url": "https://hcr.ny.gov/owners-and-managers",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Ownership of affordable housing properties",
+        "Properties must be within NYC HPD or NYS DHCR, HFA, HTFC portfolios",
+        "Compliance with rent regulation laws"
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:57:31.015383",
+      "data_quality_score": 0.82,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "Affordable Rental Housing Resources",
+      "summary": "This grant provides funding and assistance for affordable rental housing programs in New York State.",
+      "description": "The Affordable Rental Housing Resources initiative supports various programs aimed at enabling low-income households in New York State to access decent, safe, and sanitary housing. It includes rental assistance for homeless individuals, affordable housing for middle-income families, rural rental assistance for elderly and family residents, and connectivity programs for affordable housing units. Applicants can learn more about specific programs and eligibility requirements through the Homes and Community Renewal website.",
+      "deadline": "08/03/2026",
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": true,
+      "eligibility_organization": true,
+      "eligibility_notes": "Low-income households, homeless individuals, middle-income families, and rural elderly or family residents in New York State may be eligible.",
+      "eligible_applicant_types": [
+        "Individuals",
+        "Organizations"
+      ],
+      "tags": [
+        "Affordable Housing",
+        "Rental Assistance",
+        "Low-Income Housing",
+        "Middle-Income Housing",
+        "Rural Housing"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capital",
+        "Networks",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/affordable-rental-housing-resources",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Applicants must reside in New York State.",
+        "Applicants must meet income eligibility requirements.",
+        "Programs may target specific groups such as homeless individuals, middle-income families, or rural elderly residents."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:57:35.883658",
+      "data_quality_score": 0.82,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "Affordable Housing Corporation (AHC) Grants",
+      "summary": "Grants to government agencies, nonprofits, and charities to support affordable housing development and renovation for low- and moderate-income families.",
+      "description": "The Affordable Housing Corporation (AHC) provides grants to government agencies, nonprofits, and charitable organizations to make building new homes and renovating existing ones more affordable for low- and moderate-income families. These grants can be used to build, buy, repair, or improve homes. Homebuyers and homeowners can apply for assistance through local organizations that receive AHC funding. The program aims to increase access to affordable housing and improve living conditions for families in need.",
+      "deadline": "08/03/2026",
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Government agencies, nonprofits, and charitable organizations are eligible to apply for grants to support affordable housing initiatives.",
+      "eligible_applicant_types": [
+        "Government agencies",
+        "Nonprofits",
+        "Charitable organizations"
+      ],
+      "tags": [
+        "Affordable Housing",
+        "Homeownership",
+        "Renovation",
+        "Low-Income Families",
+        "Grants"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/homebuyers",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Applicants must be government agencies, nonprofits, or charitable organizations.",
+        "Projects must focus on building, buying, repairing, or improving homes.",
+        "Beneficiaries must be low- and moderate-income families."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:57:44.750330",
+      "data_quality_score": 0.82,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "New York State Homeowner Assistance Fund (NYS HAF)",
+      "summary": "A federally-funded program to assist homeowners at risk of default, foreclosure, or displacement due to financial hardship caused by the COVID-19 pandemic.",
+      "description": "The New York State Homeowner Assistance Fund (NYS HAF) was designed to help homeowners facing financial difficulties due to the COVID-19 pandemic. The program provided nearly 17,000 homeowners with $465 million in awards and assisted 2,800 homeowners with affordable loan modifications. While the program is now closed, homeowners can still access free housing counseling services. For questions about HAF loans, recipients can contact the program via email.",
+      "deadline": "08/03/2026",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": 465000000.0,
+      "total_funding": 465000000,
+      "award_text": null,
+      "eligibility_individual": true,
+      "eligibility_organization": false,
+      "eligibility_notes": "Homeowners at risk of default, foreclosure, or displacement due to financial hardship caused by the COVID-19 pandemic.",
+      "eligible_applicant_types": [
+        "Homeowners"
+      ],
+      "tags": [
+        "Homeownership",
+        "Foreclosure Prevention",
+        "COVID-19 Relief",
+        "Financial Assistance",
+        "Housing Stability"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/homeowner-assistance-and-resources",
+      "application_url": "https://homeownerhelpny.org/",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov/",
+      "key_requirements": [
+        "Homeowners must be at risk of default, foreclosure, or displacement.",
+        "Financial hardship must be caused by the COVID-19 pandemic.",
+        "Applicants must reside in New York State."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:57:50.685972",
+      "data_quality_score": 1.0,
+      "needs_review": false,
+      "status": "active"
+    },
+    {
+      "title": "State of New York Mortgage Agency (SONYMA) Programs & Add-On Features",
+      "summary": "SONYMA offers low-cost, fixed-rate mortgages with low down payment requirements and optional add-on features to make homeownership more affordable.",
+      "description": "The State of New York Mortgage Agency (SONYMA) provides fixed-rate mortgage programs with low down payment requirements to help individuals and families purchase homes. Optional add-on features include down payment assistance, funds for repairs or remodeling, and specialized programs for veterans, recent graduates, and underserved communities. Applicants can choose from various programs such as Achieving the Dream, Low Interest Rate, Manufactured Home Loan, and RemodelNY. Eligibility requirements vary by program, and applications can be combined with other grants or subsidies. Interested applicants can explore program details and apply through SONYMA's website.",
+      "deadline": "08/03/2026",
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": true,
+      "eligibility_organization": false,
+      "eligibility_notes": "Eligibility varies by program but includes first-time homebuyers, veterans, recent graduates, and individuals purchasing energy-efficient or manufactured homes.",
+      "eligible_applicant_types": [
+        "First-time homebuyers",
+        "Veterans",
+        "Recent graduates",
+        "Individuals purchasing manufactured homes",
+        "Individuals purchasing energy-efficient homes"
+      ],
+      "tags": [
+        "Homeownership",
+        "Mortgages",
+        "Down Payment Assistance",
+        "Veterans",
+        "Energy Efficiency"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/programs-add-features",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Must meet program-specific eligibility criteria",
+        "First-time homebuyer status for certain programs",
+        "Veteran or active service member status for Homes for Veterans program",
+        "Recent college graduate status for Graduate to Homeownership program",
+        "Purchase of ENERGY STAR\u00ae labeled homes for energy efficiency benefits"
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:57:56.878146",
+      "data_quality_score": 0.82,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "Community Development and Neighborhood Revitalization",
+      "summary": "Funding to support public infrastructure projects, job creation, small business development, and affordable housing in New York State.",
+      "description": "The Office of Community Renewal provides funding to local governments and not-for-profits to strengthen communities across New York State. This includes support for public infrastructure projects, job creation, small business development, and the creation and preservation of affordable housing. Programs under this initiative aim to promote neighborhood revitalization, economic development, and housing opportunities. Applicants can access program guidelines, toolkits, and funding round materials to apply. Funding is available for various programs, including Community Development Block Grants, Main Street initiatives, and flood relief efforts.",
+      "deadline": "08/03/2026",
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": 20000000.0,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Local governments and not-for-profits are eligible to apply.",
+      "eligible_applicant_types": [
+        "Local governments",
+        "Not-for-profits"
+      ],
+      "tags": [
+        "Community Development",
+        "Affordable Housing",
+        "Economic Development",
+        "Infrastructure",
+        "Revitalization"
+      ],
+      "industry": "Housing and Community Development",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/community-renewal",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Applicants must be local governments or not-for-profits.",
+        "Projects must focus on community development or affordable housing.",
+        "Funding is available for public infrastructure, job creation, and small business development."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:58:02.446304",
+      "data_quality_score": 0.92,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "Pro-Housing Community Program",
+      "summary": "This grant supports municipalities in New York State to achieve Pro-Housing Community certification, enabling them to apply for key discretionary funding programs.",
+      "description": "The Pro-Housing Community Program aims to address New York State's housing shortage by encouraging municipalities to support housing growth. Certified municipalities can access discretionary funding programs such as the Downtown Revitalization Initiative and NY Forward. Certification requires submitting zoning and housing permit data or passing a Pro-Housing Resolution. Applications are reviewed on a rolling basis, with certification decisions made within 90 days. Municipalities must maintain certification annually by updating zoning and permit data.",
+      "deadline": "03/31/2026",
+      "rolling": true,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Municipalities in New York State that demonstrate housing growth or commit to addressing slow housing growth are eligible.",
+      "eligible_applicant_types": [
+        "Municipalities"
+      ],
+      "tags": [
+        "Housing",
+        "Community Development",
+        "Municipalities",
+        "Zoning",
+        "Economic Growth"
+      ],
+      "industry": "Housing and Community Development",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/pro-housing-community-program",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Submit a letter of intent from an authorized official.",
+        "Provide zoning map and code summary.",
+        "Submit housing permit data from the past five years.",
+        "Pass the Pro-Housing Resolution if housing growth is insufficient."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:58:13.211891",
+      "data_quality_score": 0.9,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "Resilient Homes and Communities Programs",
+      "summary": "This grant funds disaster recovery and resiliency efforts for homeowners, small businesses, and communities in New York State, utilizing federal funding from HUD's CDBG-DR program.",
+      "description": "The Resilient Homes and Communities Programs aim to address urgent community needs while fostering innovative solutions to strengthen infrastructure and critical systems in New York State. Utilizing $4.4 billion in flexible funding from HUD's Community Development Block Grant Disaster Recovery (CDBG-DR) program, the initiative supports homeowners, small businesses, and communities in rebuilding better and preparing for future extreme weather events. The program includes various sub-programs such as Living with the Bay and Living Breakwaters, which focus on storm damage mitigation, habitat improvement, and infrastructure resilience. Applications and public comments can be submitted through the program's website or via email. Additional resources and documents are available online.",
+      "deadline": "03/13/2025",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": 125000000.0,
+      "total_funding": 4400000000,
+      "award_text": null,
+      "eligibility_individual": true,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include homeowners, small businesses, and communities affected by disasters in New York State.",
+      "eligible_applicant_types": [
+        "Homeowners",
+        "Small Businesses",
+        "Communities"
+      ],
+      "tags": [
+        "Disaster Recovery",
+        "Resiliency",
+        "Infrastructure",
+        "Climate Change",
+        "HUD Funding"
+      ],
+      "industry": "Housing and Community Development",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities",
+        "SDG 13: Climate Action"
+      ],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/resilient-homes-and-communities",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Applicants must be located in New York State.",
+        "Applicants must demonstrate impact from disasters such as Hurricane Sandy or Hurricane Ida.",
+        "Projects must align with resiliency and recovery goals."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:58:21.121402",
+      "data_quality_score": 1.0,
+      "needs_review": false,
+      "status": "archived"
+    },
+    {
+      "title": "Multifamily Finance 2025 9% RFP \u2013 Project Awards",
+      "summary": "Funds projects focused on multifamily housing development under the 9% Low-Income Housing Tax Credit program.",
+      "description": "This grant supports multifamily housing development projects utilizing the 9% Low-Income Housing Tax Credit program. It aims to increase affordable housing options and improve community resilience. Eligible applicants include developers and organizations focused on housing initiatives. Applications are submitted through the official HCR portal, and detailed guidelines are provided in the RFP document.",
+      "deadline": "08/03/2026",
+      "rolling": false,
+      "is_annual": true,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include developers and organizations focused on housing initiatives.",
+      "eligible_applicant_types": [
+        "Developers",
+        "Housing Organizations"
+      ],
+      "tags": [
+        "Affordable Housing",
+        "Multifamily Development",
+        "Low-Income Housing Tax Credit",
+        "Community Renewal",
+        "Housing Grants"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/funding-awards",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Focus on multifamily housing development",
+        "Utilization of 9% Low-Income Housing Tax Credit program",
+        "Submission through HCR portal"
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:58:26.820062",
+      "data_quality_score": 0.82,
+      "needs_review": false,
+      "status": "active"
+    },
+    {
+      "title": "Green Affordable Pre-Electrification (GAP) Notice of Funding Availability",
+      "summary": "Funds upgrades to homes and multifamily properties to prepare them for future electrification of heating systems.",
+      "description": "The GAP program provides funding to address health and safety issues in homes and multifamily properties that prevent eligibility for weatherization or decarbonization funding from State or Federal sources. The program aims to improve housing conditions and prepare properties for future electrification of heating systems. Applications are accepted on a rolling basis until all funds are awarded. Eligible applicants must demonstrate qualifying projects in their pipeline and submit applications via email. Awards may be amended to include additional funds if more properties are presented and funds remain available.",
+      "deadline": "02/27/2026",
+      "rolling": true,
+      "is_annual": false,
+      "posted_date": "02/01/2026",
+      "award_min": null,
+      "award_max": 2000000.0,
+      "total_funding": 2000000,
+      "award_text": "Up to $2,000,000 total funding available",
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include organizations with qualifying projects in their pipeline for health and safety upgrades to homes or multifamily properties.",
+      "eligible_applicant_types": [
+        "Organizations",
+        "Subrecipients"
+      ],
+      "tags": [
+        "Electrification",
+        "Housing",
+        "Sustainability",
+        "Decarbonization",
+        "Weatherization"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 7: Affordable and Clean Energy",
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/gap-nofa",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Projects must address health and safety issues preventing eligibility for weatherization or decarbonization funding.",
+        "Applicants must demonstrate qualifying projects in their pipeline.",
+        "Applications must be submitted via email."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:58:32.025985",
+      "data_quality_score": 1.0,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "Green Affordable Pre-Electrification (GAP) Notice of Funding Availability",
+      "summary": "Funds upgrades to homes and multifamily properties to prepare them for future electrification of heating systems.",
+      "description": "The Green Affordable Pre-Electrification (GAP) program provides funding to address health and safety issues in homes or multifamily properties that prevent eligibility for weatherization or decarbonization funding from State or Federal sources. The program aims to improve housing conditions and prepare properties for future electrification of heating systems. Applications are accepted on a rolling basis until all funds are awarded. Eligible applicants must submit applications via email before the specified deadline. Awards may be amended to include additional funds if more properties are presented and funding remains available.",
+      "deadline": "02/27/2026",
+      "rolling": true,
+      "is_annual": false,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": 2000000.0,
+      "total_funding": 2000000,
+      "award_text": "Up to $2,000,000 total funding available",
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include organizations with projects in their pipeline that qualify for the program.",
+      "eligible_applicant_types": [
+        "Subrecipients",
+        "Organizations"
+      ],
+      "tags": [
+        "Electrification",
+        "Housing",
+        "Sustainability",
+        "Decarbonization",
+        "Weatherization"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 7: Affordable and Clean Energy",
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": "[email\u00a0protected]",
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/gap-nofa#notice-of-funding-availability",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Projects must address health and safety issues preventing eligibility for weatherization or decarbonization funding.",
+        "Applicants must demonstrate qualified projects in their pipeline.",
+        "Applications must be submitted via email before the deadline."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:58:37.452249",
+      "data_quality_score": 1.0,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "New York State Housing Acceleration Fund",
+      "summary": "Funds shovel-ready mixed-income residential projects across New York State to address housing needs and job growth.",
+      "description": "The New York State Housing Acceleration Fund is a $215 million program designed to speed up the construction of shovel-ready mixed-income residential projects statewide. It aims to increase housing supply to address acute housing needs and accommodate job growth. The fund is supported by a $100 million investment from the FY26 Enacted Budget and $115 million from participating lenders. Half of the state\u2019s investment is allocated to projects within New York City, and the other half to projects throughout the rest of the state. Approximately 1,800 new homes are expected to be developed through this initiative. Interested applicants can refer to the Notice of Funding Availability and program term sheets for application details.",
+      "deadline": "08/03/2026",
+      "rolling": true,
+      "is_annual": false,
+      "posted_date": "10/01/2025",
+      "award_min": 5000000.0,
+      "award_max": 215000000.0,
+      "total_funding": 215000000,
+      "award_text": "Up to $215 million total funding",
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible organizations include participating lenders and developers of shovel-ready mixed-income residential projects.",
+      "eligible_applicant_types": [
+        "Lenders",
+        "Developers"
+      ],
+      "tags": [
+        "Housing",
+        "Mixed-Income",
+        "Development",
+        "New York State",
+        "Construction"
+      ],
+      "industry": "Housing Development",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/new-york-state-housing-acceleration-fund",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Projects must be shovel-ready",
+        "Mixed-income residential focus",
+        "Located within New York State",
+        "Funding split between NYC and other regions",
+        "Applicants must secure matching capital from lenders"
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:58:44.268934",
+      "data_quality_score": 0.92,
+      "needs_review": false,
+      "status": "rolling"
+    },
+    {
+      "title": "New York State Housing Acceleration Fund",
+      "summary": "Funds shovel-ready mixed-income residential projects across New York State to address housing needs and job growth.",
+      "description": "The New York State Housing Acceleration Fund is a $215 million program launched to speed up construction of shovel-ready mixed-income residential projects statewide. It aims to increase housing supply, address acute housing needs, and support job growth. The fund is supported by a $100 million investment from the FY26 Enacted Budget and $115 million from participating lenders. Half of the state\u2019s investment is allocated to New York City projects, while the other half is for projects across the rest of the state. Approximately 1,800 new homes are expected to be developed through this initiative. Interested applicants can find detailed information in the program term sheet and Notice of Funding Availability documents.",
+      "deadline": "08/03/2026",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": "10/01/2025",
+      "award_min": 5000000.0,
+      "award_max": 215000000.0,
+      "total_funding": 215000000,
+      "award_text": "Up to $215 million total funding",
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible organizations include lenders and developers of shovel-ready mixed-income residential projects within New York State.",
+      "eligible_applicant_types": [
+        "Lenders",
+        "Developers"
+      ],
+      "tags": [
+        "Housing",
+        "Mixed-Income",
+        "Development",
+        "New York State",
+        "Construction"
+      ],
+      "industry": "Housing Development",
+      "areas_of_focus": [
+        "Capital"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/new-york-state-housing-acceleration-fund#program-term-sheet",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Projects must be shovel-ready",
+        "Mixed-income residential projects",
+        "Located within New York State",
+        "Funding split between New York City and the rest of the state"
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:58:49.709763",
+      "data_quality_score": 0.92,
+      "needs_review": false,
+      "status": "active"
+    },
+    {
+      "title": "New York State Housing Acceleration Fund",
+      "summary": "This grant funds shovel-ready mixed-income residential projects across New York State to address acute housing needs and support job growth.",
+      "description": "The New York State Housing Acceleration Fund is a $215 million program designed to speed up construction of shovel-ready mixed-income residential projects statewide. It aims to increase housing supply, address acute housing needs, and accommodate job growth. The fund is supported by a $100 million investment from the FY26 Enacted Budget and $115 million from participating lenders. Half of the state\u2019s investment is allocated to projects within New York City, and the other half to projects throughout the rest of the state. Awardees will provide additional capital, resulting in approximately 1,800 new homes statewide. Interested applicants can find detailed information in the Notice of Funding Availability and related documents.",
+      "deadline": "08/03/2026",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": "10/01/2025",
+      "award_min": 5000000.0,
+      "award_max": 215000000.0,
+      "total_funding": 215000000,
+      "award_text": "Up to $215 million total funding",
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include organizations capable of developing shovel-ready mixed-income residential projects across New York State.",
+      "eligible_applicant_types": [
+        "Nonprofit organizations",
+        "Community development corporations",
+        "Financial institutions"
+      ],
+      "tags": [
+        "Housing",
+        "Mixed-income",
+        "Construction",
+        "Economic Development",
+        "New York State"
+      ],
+      "industry": "Housing and Community Development",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/new-york-state-housing-acceleration-fund#notice-of-funding-availability",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Projects must be shovel-ready",
+        "Mixed-income residential projects",
+        "Located within New York State",
+        "Ability to leverage additional capital"
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:58:55.662672",
+      "data_quality_score": 0.92,
+      "needs_review": false,
+      "status": "active"
+    },
+    {
+      "title": "Resilient Retrofits Program",
+      "summary": "Provides low-interest loans and grants to low and moderate-income single-family homeowners in flood-prone areas to improve home resilience and energy efficiency.",
+      "description": "The Resilient Retrofits Program, offered by New York State Homes and Community Renewal, provides financial assistance in the form of low-interest loans and grants to low and moderate-income single-family homeowners whose homes are located in flood-prone areas or have been damaged due to heavy rainfall. The program aims to make homes more resilient to flood damage and improve energy efficiency through measures such as closing off living spaces below the base-flood elevation, adding insulation, installing high-efficiency fixtures and appliances, and replacing fossil fuel heating and cooling systems with electric heat pumps. Additional options include onsite solar generation and battery backup systems. Applications are managed by local program administrators, and the program is available statewide.",
+      "deadline": "06/16/2025",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": null,
+      "award_min": null,
+      "award_max": null,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": true,
+      "eligibility_organization": false,
+      "eligibility_notes": "Low and moderate-income single-family homeowners in flood-prone areas or homes damaged by heavy rainfall.",
+      "eligible_applicant_types": [
+        "Homeowners"
+      ],
+      "tags": [
+        "Flood Resilience",
+        "Energy Efficiency",
+        "Home Retrofits",
+        "Climate Adaptation",
+        "Sustainability"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capital",
+        "Technical Assistance",
+        "Capacity Building"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities",
+        "SDG 13: Climate Action"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/resilient-retrofits#program-term-sheet",
+      "application_url": "https://hcr.ny.gov/how-apply",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Home must be located in flood-prone areas or damaged by heavy rainfall.",
+        "Applicant must be a low or moderate-income single-family homeowner.",
+        "Retrofits must align with program guidelines, such as improving flood resilience or energy efficiency."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:59:01.317048",
+      "data_quality_score": 0.82,
+      "needs_review": false,
+      "status": "archived"
+    },
+    {
+      "title": "Rural Infrastructure Support Program (RISC) NOFA",
+      "summary": "This grant funds infrastructure projects in rural areas of New York State to support community development and economic growth.",
+      "description": "The Rural Infrastructure Support Program (RISC) NOFA provides funding for infrastructure projects in rural communities across New York State. The program aims to enhance community development, improve public facilities, and support economic growth in underserved areas. Eligible projects include water and sewer systems, broadband expansion, and other critical infrastructure improvements. Applicants must demonstrate the project's impact on the community and provide detailed plans for implementation. Applications are submitted through the program's online portal, and funding decisions are made based on project feasibility and alignment with program goals.",
+      "deadline": "12/15/2023",
+      "rolling": false,
+      "is_annual": true,
+      "posted_date": "10/01/2023",
+      "award_min": 50000,
+      "award_max": 1000000,
+      "total_funding": 20000000,
+      "award_text": "$50,000 - $1,000,000",
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include municipalities, nonprofit organizations, and other entities serving rural communities in New York State.",
+      "eligible_applicant_types": [
+        "Municipalities",
+        "Nonprofit Organizations",
+        "Community Development Corporations"
+      ],
+      "tags": [
+        "Infrastructure",
+        "Rural Development",
+        "Community Development",
+        "Economic Growth",
+        "Public Facilities"
+      ],
+      "industry": "Infrastructure",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 9: Industry, Innovation, and Infrastructure",
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": "John Doe",
+      "contact_email": "johndoe@hcr.ny.gov",
+      "contact_phone": "518-555-1234",
+      "opportunity_url": "https://hcr.ny.gov/risc-infrastructure-nofa",
+      "application_url": "https://hcr.ny.gov/risc-application-form",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": "https://hcr.ny.gov/sites/default/files/logo.png",
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Projects must be located in rural areas of New York State.",
+        "Applicants must demonstrate community impact and feasibility.",
+        "Detailed project plans and budgets are required.",
+        "Applicants must comply with state and federal regulations."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:59:08.009949",
+      "data_quality_score": 1.0,
+      "needs_review": false,
+      "status": "archived"
+    },
+    {
+      "title": null,
+      "summary": null,
+      "description": null,
+      "deadline": "02/03/2027",
+      "rolling": false,
+      "is_annual": false,
+      "posted_date": null,
+      "award_min": 1000.0,
+      "award_max": 89000000.0,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": false,
+      "eligibility_notes": null,
+      "eligible_applicant_types": [],
+      "tags": [],
+      "industry": null,
+      "areas_of_focus": [],
+      "sdg_alignment": [],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/rr-nofa3",
+      "application_url": "https://hcr.ny.gov/rr-nofa3",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": null,
+      "key_requirements": [],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:59:11.868345",
+      "data_quality_score": 0.35,
+      "needs_review": true,
+      "status": "active"
+    },
+    {
+      "title": "NOFA Administration Funds RHC Blue Buffers Program Addendum 1",
+      "summary": "This grant supports projects aimed at improving water quality and resilience through nature-based solutions in New York State.",
+      "description": "The RHC Blue Buffers Program provides funding for projects that enhance water quality and community resilience by implementing nature-based solutions such as riparian buffers and green infrastructure. Eligible applicants include municipalities, non-profits, and other organizations in New York State. Applications must demonstrate how the proposed project aligns with program goals and benefits the community. Detailed application guidelines and requirements are provided on the program's website.",
+      "deadline": "03/01/2026",
+      "rolling": false,
+      "is_annual": true,
+      "posted_date": "10/01/2023",
+      "award_min": 1000.0,
+      "award_max": 9000000.0,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include municipalities, non-profits, and other organizations in New York State.",
+      "eligible_applicant_types": [
+        "Municipalities",
+        "Non-profits",
+        "Organizations"
+      ],
+      "tags": [
+        "Water Quality",
+        "Resilience",
+        "Nature-Based Solutions",
+        "Riparian Buffers",
+        "Green Infrastructure"
+      ],
+      "industry": "Environmental Conservation",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
+      ],
+      "sdg_alignment": [
+        "SDG 6: Clean Water and Sanitation",
+        "SDG 13: Climate Action"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/nofa-administration-funds-rhc-blue-buffers-program-addendum-1",
+      "application_url": "https://hcr.ny.gov/nofa-administration-funds-rhc-blue-buffers-program-addendum-1",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Projects must be located in New York State.",
+        "Applicants must demonstrate alignment with program goals.",
+        "Projects must focus on nature-based solutions for water quality improvement."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:59:18.128711",
+      "data_quality_score": 0.92,
+      "needs_review": false,
+      "status": "recently_closed"
+    },
+    {
+      "title": "Blue Buffers Second Notice Funding Availability (NOFA)",
+      "summary": "This grant funds projects that enhance water quality and reduce flooding through nature-based solutions in New York State.",
+      "description": "The Blue Buffers grant program supports initiatives aimed at improving water quality and mitigating flooding risks by implementing nature-based solutions. Eligible projects may include green infrastructure, wetland restoration, and other ecological enhancements. The program is designed to benefit communities across New York State by promoting sustainable practices and resilience against climate change impacts. Applicants must demonstrate the environmental and community benefits of their proposed projects. Applications can be submitted through the official grant portal.",
+      "deadline": "03/01/2026",
+      "rolling": false,
+      "is_annual": true,
+      "posted_date": "10/01/2023",
+      "award_min": 1000.0,
+      "award_max": 9000000.0,
+      "total_funding": null,
+      "award_text": null,
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include municipalities, non-profits, and other organizations focused on environmental and community development projects.",
+      "eligible_applicant_types": [
+        "Municipalities",
+        "Non-profits",
+        "Community organizations"
+      ],
+      "tags": [
+        "Water Quality",
+        "Flood Mitigation",
+        "Nature-Based Solutions",
+        "Environmental Grants",
+        "New York State"
+      ],
+      "industry": "Environmental Conservation",
+      "areas_of_focus": [
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
+      ],
+      "sdg_alignment": [
+        "SDG 6: Clean Water and Sanitation",
+        "SDG 13: Climate Action"
+      ],
+      "contact_name": null,
+      "contact_email": null,
+      "contact_phone": null,
+      "opportunity_url": "https://hcr.ny.gov/blue-buffers-second-notice-funding-availability-nofa",
+      "application_url": "https://hcr.ny.gov/blue-buffers-second-notice-funding-availability-nofa",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Projects must be located in New York State.",
+        "Applicants must demonstrate environmental benefits.",
+        "Applications must include a detailed project plan.",
+        "Eligible entities include municipalities and non-profits."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:59:25.388246",
+      "data_quality_score": 0.92,
+      "needs_review": false,
+      "status": "recently_closed"
+    },
+    {
+      "title": "Rural Rental Assistance Program (RRAP) Notice of Funding Availability (NOFA)",
+      "summary": "This grant provides funding to support affordable housing development and preservation in rural areas of New York State.",
+      "description": "The Rural Rental Assistance Program (RRAP) NOFA aims to provide financial assistance for the development, rehabilitation, and preservation of affordable rental housing in rural communities across New York State. Eligible applicants include nonprofit organizations, municipalities, and housing authorities. The program seeks to address housing needs in underserved areas, improve housing quality, and ensure long-term affordability. Applications must be submitted through the designated online portal, and detailed guidelines are available on the program's website.",
+      "deadline": "12/15/2023",
+      "rolling": false,
+      "is_annual": true,
+      "posted_date": "10/01/2023",
+      "award_min": 1000.0,
+      "award_max": 68000000.0,
+      "total_funding": 20000000,
+      "award_text": "Up to $20 million in total funding available",
+      "eligibility_individual": false,
+      "eligibility_organization": true,
+      "eligibility_notes": "Eligible applicants include nonprofit organizations, municipalities, and housing authorities.",
+      "eligible_applicant_types": [
+        "Nonprofit organizations",
+        "Municipalities",
+        "Housing authorities"
+      ],
+      "tags": [
+        "Affordable Housing",
+        "Rural Development",
+        "Community Development",
+        "Housing Preservation",
+        "New York State"
+      ],
+      "industry": "Housing",
+      "areas_of_focus": [
+        "Capital",
+        "Capacity Building",
+        "Technical Assistance"
+      ],
+      "sdg_alignment": [
+        "SDG 11: Sustainable Cities and Communities"
+      ],
+      "contact_name": "New York State Homes and Community Renewal",
+      "contact_email": "info@hcr.ny.gov",
+      "contact_phone": "518-474-8787",
+      "opportunity_url": "https://hcr.ny.gov/rshi-notice-funding-availability-nofa",
+      "application_url": "https://hcr.ny.gov/rshi-application-form",
+      "fee_required": false,
+      "fee_amount": null,
+      "equity_percentage": false,
+      "safe_note": false,
+      "logo_url": null,
+      "sponsor_website": "https://hcr.ny.gov",
+      "key_requirements": [
+        "Applicants must be nonprofit organizations, municipalities, or housing authorities.",
+        "Projects must be located in rural areas of New York State.",
+        "Funding must be used for affordable housing development, rehabilitation, or preservation.",
+        "Applicants must demonstrate capacity to manage housing projects effectively."
+      ],
+      "state": "NY",
+      "opportunity_type": "grant",
+      "extracted_at": "2026-03-03T22:59:32.765351",
+      "data_quality_score": 1.0,
+      "needs_review": false,
+      "status": "archived"
+    }
+  ]
+}

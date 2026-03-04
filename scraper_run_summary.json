@@ -1,0 +1,84 @@
+{
+  "run_at": "2026-03-03T22:59:33.276136",
+  "duration_sec": 14481.065874,
+  "total_grants": 256,
+  "sources": [
+    {
+      "source": "NY Empire State Development",
+      "state": "NY",
+      "output_file": null,
+      "total": 0,
+      "active": 0,
+      "rolling": 0,
+      "needs_review": 0,
+      "no_deadline": 0,
+      "error": "name 'LISTING_URL' is not defined"
+    },
+    {
+      "source": "NY Dept of State \u2013 Community Grants",
+      "state": "NY",
+      "output_file": null,
+      "total": 13,
+      "active": 2,
+      "rolling": 7,
+      "needs_review": 6,
+      "no_deadline": 0,
+      "error": null
+    },
+    {
+      "source": "NY State Council on the Arts",
+      "state": "NY",
+      "output_file": null,
+      "total": 10,
+      "active": 6,
+      "rolling": 1,
+      "needs_review": 3,
+      "no_deadline": 2,
+      "error": null
+    },
+    {
+      "source": "NY Dept of Health \u2013 Grant Programs",
+      "state": "NY",
+      "output_file": null,
+      "total": 156,
+      "active": 14,
+      "rolling": 12,
+      "needs_review": 21,
+      "no_deadline": 10,
+      "error": null
+    },
+    {
+      "source": "NY Office of Children & Family Services",
+      "state": "NY",
+      "output_file": null,
+      "total": 0,
+      "active": 0,
+      "rolling": 0,
+      "needs_review": 0,
+      "no_deadline": 0,
+      "error": null
+    },
+    {
+      "source": "NY State Education Dept \u2013 Grants",
+      "state": "NY",
+      "output_file": null,
+      "total": 55,
+      "active": 5,
+      "rolling": 17,
+      "needs_review": 10,
+      "no_deadline": 2,
+      "error": null
+    },
+    {
+      "source": "NY Homes & Community Renewal",
+      "state": "NY",
+      "output_file": null,
+      "total": 22,
+      "active": 5,
+      "rolling": 11,
+      "needs_review": 1,
+      "no_deadline": 0,
+      "error": null
+    }
+  ]
+}

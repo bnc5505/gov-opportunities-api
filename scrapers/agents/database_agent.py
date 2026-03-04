@@ -1,7 +1,5 @@
 """
-Agent 4: Database Manager Agent (RUNWEI-ALIGNED)
-
-Validates and saves grants to Azure PostgreSQL with Runwei schema.
+Database agent — validates and saves grants to the database.
 """
 
 import json
@@ -10,7 +8,6 @@ from datetime import datetime
 import sys
 import os
 
-# Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from database import SessionLocal
@@ -18,9 +15,6 @@ from models import Opportunity, Source, Agency, State, OpportunityType, Opportun
 
 
 class DatabaseAgent:
-    """
-    Saves validated grants to database with Runwei schema.
-    """
     
     def __init__(self):
         self.processed_urls = set()
@@ -40,7 +34,6 @@ class DatabaseAgent:
         
         for grant in grants:
             try:
-                # Check for duplicate
                 if grant['application_url'] in self.processed_urls:
                     print(f"  ⊗ Duplicate: {grant['title'][:50]}")
                     skipped += 1
@@ -55,12 +48,10 @@ class DatabaseAgent:
                     skipped += 1
                     continue
                 
-                # Get or create relationships
                 source = self._get_or_create_source(grant)
                 agency = self._get_agency(grant)
                 state = self._get_state(grant)
                 
-                # Parse deadline
                 deadline = None
                 if grant.get('deadline'):
                     try:
@@ -68,7 +59,6 @@ class DatabaseAgent:
                     except:
                         pass
                 
-                # Parse posted date
                 posted_date = None
                 if grant.get('posted_date'):
                     try:
@@ -76,7 +66,6 @@ class DatabaseAgent:
                     except:
                         pass
                 
-                # Map status string to enum
                 status_mapping = {
                     'active': OpportunityStatus.ACTIVE,
                     'expiring_soon': OpportunityStatus.EXPIRING_SOON,
@@ -87,7 +76,6 @@ class DatabaseAgent:
                 }
                 status = status_mapping.get(grant.get('status', 'unverified'), OpportunityStatus.UNVERIFIED)
                 
-                # Map category string to enum
                 category_mapping = {
                     'private_opportunities': OpportunityCategory.PRIVATE,
                     'government_grants': OpportunityCategory.GOVERNMENT,
@@ -96,16 +84,12 @@ class DatabaseAgent:
                 }
                 category = category_mapping.get(grant.get('category', 'government_grants'), OpportunityCategory.GOVERNMENT)
                 
-                # Create opportunity
                 opportunity = Opportunity(
-                    # Runwei grid view fields
                     logo_url=grant.get('logo_url'),
                     title=grant['title'][:500],
                     award_value=(grant.get('award_value') or 'Not specified')[:100],
                     deadline=deadline,
                     deadline_display=(grant.get('deadline_display') or '')[:100],
-
-                    # Runwei detail modal fields
                     tags=grant.get('tags', []),
                     opportunity_gap_resources=grant.get('opportunity_gap_resources') or grant.get('areas_of_focus', []),
                     description=grant.get('description', '')[:5000] if grant.get('description') else None,
@@ -114,41 +98,25 @@ class DatabaseAgent:
                     industry=grant.get('industry', '')[:100] if grant.get('industry') else None,
                     global_locations=grant.get('global_locations'),
                     application_url=grant['application_url'][:500],
-                    
-                    # Classification
                     opportunity_type=OpportunityType.GRANT,
                     category=category,
                     status=status,
-                    
-                    # Financial
                     award_min=grant.get('award_min'),
                     award_max=grant.get('award_max'),
                     total_funding=grant.get('total_funding'),
-                    
-                    # Eligibility
                     eligibility_individual=grant.get('eligibility_individual', False),
                     eligibility_organization=grant.get('eligibility_organization', True),
-                    
-                    # Relationships
                     source_id=source.id if source else None,
                     agency_id=agency.id if agency else None,
                     state_id=state.id if state else None,
-                    
-                    # Contact
                     contact_email=grant.get('contact_email', '')[:255] if grant.get('contact_email') else None,
                     contact_phone=grant.get('contact_phone', '')[:50] if grant.get('contact_phone') else None,
-                    
-                    # Quality
                     data_quality_score=grant.get('data_quality_score', 0.0),
                     extraction_confidence=grant.get('extraction_confidence', 0.0),
                     needs_review=grant.get('needs_review', True),
-                    
-                    # Dates
                     posted_date=posted_date,
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
-                    
-                    # Raw data
                     raw_source_data={'original_extraction': grant}
                 )
                 
@@ -162,7 +130,6 @@ class DatabaseAgent:
                 print(f"  ✗ Error saving: {str(e)}")
                 errors += 1
         
-        # Commit all
         try:
             self.db.commit()
             print(f"\n✓ Committed {saved} grants to database")
@@ -178,10 +145,9 @@ class DatabaseAgent:
         }
     
     def _get_or_create_source(self, grant: Dict):
-        """Get or create source from URL."""
+        """Get or create a Source row keyed by scheme+host of the application URL."""
         url = grant.get('application_url', '')
 
-        # Extract scheme + host as the source URL
         if '//' in url:
             parts = url.split('//')
             scheme = parts[0] + '//'
@@ -204,15 +170,13 @@ class DatabaseAgent:
         return source
 
     def _get_agency(self, grant: Dict):
-        """Get agency by name or state code."""
-        # Prefer lookup by name if provided
+        """Get agency by name, falling back to any agency for the state."""
         agency_name = grant.get('agency_name') or grant.get('sponsor_name')
         if agency_name:
             agency = self.db.query(Agency).filter(Agency.name == agency_name).first()
             if agency:
                 return agency
 
-        # Fall back to finding any agency linked to the state
         state_code = grant.get('state')
         if not state_code:
             return None

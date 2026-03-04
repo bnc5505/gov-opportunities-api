@@ -22,8 +22,6 @@ class SearchAgent:
     """
     
     def __init__(self):
-        # Brave Search API is free for 2000 searches/month
-        # Sign up at: https://brave.com/search/api/
         self.brave_api_key = settings.brave_search_api_key
         self.search_results = []
         
@@ -40,7 +38,6 @@ class SearchAgent:
         """
         print(f"\n🔍 Agent 1: Searching for {state} grants in {year}...")
         
-        # Define search queries
         queries = [
             f"{state} government grants {year} open applications",
             f"{state} state funding opportunities {year}",
@@ -55,7 +52,6 @@ class SearchAgent:
             results = self._perform_search(query, state)
             all_results.extend(results)
         
-        # Deduplicate by URL
         unique_results = {r['url']: r for r in all_results}.values()
         
         print(f"  ✓ Found {len(unique_results)} unique promising pages")
@@ -66,7 +62,6 @@ class SearchAgent:
         """
         Perform a single search query.
         """
-        # If no Brave API key, use fallback URLs
         if not self.brave_api_key:
             return self._get_fallback_urls(state)
         
@@ -93,7 +88,6 @@ class SearchAgent:
                 results = []
                 
                 for result in data.get('web', {}).get('results', []):
-                    # Filter for likely grant pages
                     if self._is_grant_page(result):
                         results.append({
                             'url': result['url'],
@@ -121,15 +115,12 @@ class SearchAgent:
         title = result['title'].lower()
         description = result.get('description', '').lower()
         
-        # Positive signals
         grant_keywords = ['grant', 'funding', 'opportunity', 'rfa', 'rfp', 'application']
         has_grant_keyword = any(kw in title or kw in description for kw in grant_keywords)
-        
-        # Negative signals (filter out)
+
         exclude_keywords = ['expired', 'closed', 'archive', '2024', '2023', '2022', 'blog', 'news']
         has_exclude = any(kw in title or kw in description for kw in exclude_keywords)
-        
-        # Government domains are good
+
         is_gov = '.gov' in url or '.edu' in url
         
         return has_grant_keyword and not has_exclude and is_gov
@@ -217,7 +208,6 @@ def main():
         results = agent.search_grants(state)
         all_results.extend(results)
     
-    # Save results
     output = {
         'searched_at': datetime.now().isoformat(),
         'total_urls_found': len(all_results),

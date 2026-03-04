@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from database import get_db
 from models import Opportunity, State
@@ -15,11 +15,10 @@ from schemas import (
 router = APIRouter(prefix="/opportunities", tags=["Opportunities"])
 
 
-def _build_query(db, search, opportunity_type, category, status, state_code,
-                 is_global, rolling, industry, agency_id, award_min, award_max,
+def _build_query(db, search, opportunity_type, status, state_code,
+                 rolling, industry, agency_id, award_min, award_max,
                  deadline_after, deadline_before, eligibility_individual,
-                 eligibility_organization, needs_review,
-                 exclude_fee, exclude_equity, exclude_safe_note):
+                 eligibility_organization, needs_review):
     q = db.query(Opportunity).options(
         joinedload(Opportunity.agency),
         joinedload(Opportunity.state),
@@ -33,14 +32,10 @@ def _build_query(db, search, opportunity_type, category, status, state_code,
         ))
     if opportunity_type:
         q = q.filter(Opportunity.opportunity_type == opportunity_type)
-    if category:
-        q = q.filter(Opportunity.category == category)
     if status:
         q = q.filter(Opportunity.status == status)
     if state_code:
         q = q.join(Opportunity.state).filter(State.code == state_code.upper())
-    if is_global is not None:
-        q = q.filter(Opportunity.is_global == is_global)
     if rolling is not None:
         q = q.filter(Opportunity.rolling == rolling)
     if industry:
@@ -61,62 +56,50 @@ def _build_query(db, search, opportunity_type, category, status, state_code,
         q = q.filter(Opportunity.eligibility_organization == eligibility_organization)
     if needs_review is not None:
         q = q.filter(Opportunity.needs_review == needs_review)
-    if exclude_fee:
-        q = q.filter(Opportunity.fee_required == False)
-    if exclude_equity:
-        q = q.filter(Opportunity.equity_percentage == False)
-    if exclude_safe_note:
-        q = q.filter(Opportunity.safe_note == False)
     return q
 
 
 @router.get("", response_model=PaginatedOpportunityResponse)
 def list_opportunities(
-    q:                        Optional[str]  = Query(None),
-    opportunity_type:         Optional[str]  = Query(None),
-    category:                 Optional[str]  = Query(None),
-    status:                   Optional[str]  = Query(None),
-    state_code:               Optional[str]  = Query(None),
-    is_global:                Optional[bool] = Query(None),
-    rolling:                  Optional[bool] = Query(None),
-    industry:                 Optional[str]  = Query(None),
-    agency_id:                Optional[int]  = Query(None),
-    award_min:                Optional[float]= Query(None),
-    award_max:                Optional[float]= Query(None),
-    deadline_after:           Optional[datetime] = Query(None),
-    deadline_before:          Optional[datetime] = Query(None),
-    eligibility_individual:   Optional[bool] = Query(None),
+    q: Optional[str] = Query(None),
+    opportunity_type: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    state_code: Optional[str] = Query(None),
+    rolling: Optional[bool] = Query(None),
+    industry: Optional[str] = Query(None),
+    agency_id: Optional[int] = Query(None),
+    award_min: Optional[float] = Query(None),
+    award_max: Optional[float] = Query(None),
+    deadline_after: Optional[datetime] = Query(None),
+    deadline_before: Optional[datetime] = Query(None),
+    eligibility_individual: Optional[bool] = Query(None),
     eligibility_organization: Optional[bool] = Query(None),
-    needs_review:             Optional[bool] = Query(None),
-    exclude_fee:              bool           = Query(False),
-    exclude_equity:           bool           = Query(False),
-    exclude_safe_note:        bool           = Query(False),
-    sort_by:                  str            = Query("deadline"),
-    sort_order:               str            = Query("asc", pattern="^(asc|desc)$"),
-    page:                     int            = Query(1, ge=1),
-    per_page:                 int            = Query(20, ge=1, le=100),
+    needs_review: Optional[bool] = Query(None),
+    sort_by: str = Query("deadline"),
+    sort_order: str = Query("asc", pattern="^(asc|desc)$"),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
     query = _build_query(
-        db, q, opportunity_type, category, status, state_code,
-        is_global, rolling, industry, agency_id, award_min, award_max,
+        db, q, opportunity_type, status, state_code,
+        rolling, industry, agency_id, award_min, award_max,
         deadline_after, deadline_before, eligibility_individual,
         eligibility_organization, needs_review,
-        exclude_fee, exclude_equity, exclude_safe_note,
     )
 
     sort_col = getattr(Opportunity, sort_by, Opportunity.deadline)
-    query    = query.order_by(sort_col.asc() if sort_order == "asc" else sort_col.desc())
+    query = query.order_by(sort_col.asc() if sort_order == "asc" else sort_col.desc())
 
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
 
     return PaginatedOpportunityResponse(
-        total    = total,
-        page     = page,
-        per_page = per_page,
-        pages    = -(-total // per_page),
-        items    = items,
+        total=total,
+        page=page,
+        page_size=per_page,
+        total_pages=-(-total // per_page),
+        data=items,
     )
 
 
