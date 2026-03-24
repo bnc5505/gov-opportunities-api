@@ -11,7 +11,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from database import SessionLocal
-from models import Opportunity, Source, Agency, State, OpportunityType, OpportunityStatus, OpportunityCategory
+from models import Opportunity, Source, Agency, State, OpportunityType, OpportunityStatus
 
 
 class DatabaseAgent:
@@ -68,21 +68,15 @@ class DatabaseAgent:
                 
                 status_mapping = {
                     'active': OpportunityStatus.ACTIVE,
-                    'expiring_soon': OpportunityStatus.EXPIRING_SOON,
-                    'rolling': OpportunityStatus.ROLLING,
-                    'recently_closed': OpportunityStatus.RECENTLY_CLOSED,
+                    'expiring_soon': OpportunityStatus.ACTIVE,
+                    'rolling': OpportunityStatus.ACTIVE,
+                    'recently_closed': OpportunityStatus.EXPIRED,
                     'archived': OpportunityStatus.ARCHIVED,
                     'unverified': OpportunityStatus.UNVERIFIED,
                 }
                 status = status_mapping.get(grant.get('status', 'unverified'), OpportunityStatus.UNVERIFIED)
                 
-                category_mapping = {
-                    'private_opportunities': OpportunityCategory.PRIVATE,
-                    'government_grants': OpportunityCategory.GOVERNMENT,
-                    'global': OpportunityCategory.GLOBAL,
-                    'featured': OpportunityCategory.FEATURED,
-                }
-                category = category_mapping.get(grant.get('category', 'government_grants'), OpportunityCategory.GOVERNMENT)
+                # category field removed — no OpportunityCategory enum in current model
                 
                 opportunity = Opportunity(
                     logo_url=grant.get('logo_url'),

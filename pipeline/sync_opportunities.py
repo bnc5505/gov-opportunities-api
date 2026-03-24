@@ -54,10 +54,13 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-MIN_SCORE    = 0.30   # rolling grants without deadlines typically score ~0.35
-REVIEW_BELOW = 0.60
+MIN_SCORE      = 0.50   # base minimum score
+HIGH_SCORE     = 0.70   # grants above this go live regardless of award size
+MIN_AWARD      = 5000   # grants below HIGH_SCORE need at least this award_min to go live
+REVIEW_BELOW   = 0.70   # flag for human review below this score
 
-LIVE_STATUSES = {"active", "rolling", "expiring_soon", "recently_closed", "unverified"}
+# only push grants that are currently open or rolling
+LIVE_STATUSES = {"active", "rolling", "expiring_soon"}
 
 STATUS_MAP = {
     "active":          "active",
@@ -167,11 +170,17 @@ def parse_json_field(value):
 def is_live_ready(row, min_score: float) -> bool:
     if not row["title"] or not row["application_url"]:
         return False
-    if (row["data_quality_score"] or 0) < min_score:
+    score = row["data_quality_score"] or 0
+    if score < min_score:
         return False
     if (row["status"] or "").lower() not in LIVE_STATUSES:
         return False
     if not row["deadline"] and not row["rolling"]:
+        return False
+    # high-quality grants go live as-is
+    # lower-scored grants need a significant award amount to be worth showing
+    award_min = row["award_min"] or 0
+    if score < HIGH_SCORE and award_min < MIN_AWARD:
         return False
     return True
 
