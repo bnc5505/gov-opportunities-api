@@ -46,7 +46,7 @@ SKIP_KEYWORDS  = {
 # URL path segments that indicate a grant/program detail page on pa.gov
 GRANT_PATH_KEYWORDS = [
     "/grants/", "/programs/", "/funding/", "/assistance/",
-    "/services/", "/guide/", "/guides/",
+    "/guide/", "/guides/",
 ]
 
 logging.basicConfig(

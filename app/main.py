@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,10 +10,17 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Government Grants API", version="1.0.0")
 
-# dev origins only — update before prod
+# CORS_ORIGINS env var overrides defaults (comma-separated list)
+_cors_env = os.getenv("CORS_ORIGINS", "")
+allowed_origins = (
+    [o.strip() for o in _cors_env.split(",") if o.strip()]
+    if _cors_env
+    else ["http://localhost:3000", "http://localhost:8000"]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

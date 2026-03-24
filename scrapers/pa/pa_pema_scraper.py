@@ -87,6 +87,10 @@ def scrape_listing() -> List[Dict]:
         if "/pages/home" in path_lower or "/pages/default" == path_lower:
             continue
 
+        # Only follow pages within the /Grants/ section — skip nav/sidebar links
+        if "/grants/" not in path_lower:
+            continue
+
         if href not in seen:
             seen.add(href)
             links.append({"url": href, "name": text})

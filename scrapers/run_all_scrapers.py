@@ -242,6 +242,11 @@ ALL_SOURCES: List[Dict] = [
         "module": "scrapers.pa.pa_gov_grants_scraper",
     },
     {
+        "state":  "PA", "name": "PA Grants Search Portal (92 grants)",
+        "type":   "custom",
+        "module": "scrapers.pa.pa_grants_search_scraper",
+    },
+    {
         "state":  "PA", "name": "PA Dept of Labor & Industry – Workforce Grants",
         "type":   "custom",
         "module": "scrapers.pa.pa_dli_scraper",

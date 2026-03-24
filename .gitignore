@@ -1,5 +1,12 @@
-# Environment variables (NEVER commit this!)
+# Environment variables (NEVER commit these!)
 .env
+.env.*
+!.env.example
+
+# Large data exports and binary docs
+*.xml
+*.docx
+*.xlsx
 
 # Database files
 *.db
