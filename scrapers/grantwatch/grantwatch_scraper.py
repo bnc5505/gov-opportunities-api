@@ -37,7 +37,6 @@ from models import (
     ReviewQueue,
     OpportunityType,
     OpportunityStatus,
-    OpportunityCategory,
 )
 from database import SessionLocal, engine
 
@@ -1478,7 +1477,7 @@ def run_pipeline():
                     deadline         = deadline,
                     deadline_display = format_deadline_display(deadline),
                     opportunity_type = OpportunityType.GRANT,
-                    category         = OpportunityCategory.GOVERNMENT,
+                    category         = None,
                     status           = opp_status,
                     industry         = category_name,
                     tags             = tags,

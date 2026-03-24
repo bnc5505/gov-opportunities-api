@@ -1,8 +1,5 @@
 """
-Agent 2: Content Extractor Agent (RUNWEI-ALIGNED)
-
-Extracts grant data from PDFs and HTML pages using Azure OpenAI.
-Updated to extract ALL fields required by Runwei platform.
+Content extractor agent — extracts grant data from PDFs and HTML pages using Azure OpenAI.
 """
 
 import os
@@ -21,9 +18,6 @@ from config import settings
 
 
 class ExtractorAgent:
-    """
-    Autonomous agent that extracts grant data with full Runwei field support.
-    """
     
     def __init__(self):
         self.api_key = settings.azure_openai_api_key
@@ -111,7 +105,7 @@ class ExtractorAgent:
             return None
     
     def _extract_with_ai(self, text: str, url: str, state: str) -> Optional[Dict]:
-        """Use Azure OpenAI to extract grant data - RUNWEI SCHEMA."""
+        """Use Azure OpenAI to extract structured grant data."""
         
         prompt = f"""You are an expert at reading government grant documents and extracting structured data for the Runwei grants platform.
 
@@ -173,13 +167,11 @@ Return ONLY valid JSON with no markdown formatting."""
             
             grant_data = json.loads(response_text.strip())
             
-            # Add metadata
             grant_data['application_url'] = url
             grant_data['state'] = state
             grant_data['opportunity_type'] = 'grant'
             grant_data['extraction_confidence'] = 0.85
-            
-            # Generate display formats
+
             if grant_data.get('deadline'):
                 grant_data['deadline_display'] = grant_data['deadline']
             
@@ -244,14 +236,11 @@ Return ONLY valid JSON array."""
             if not isinstance(grants, list):
                 grants = [grants]
             
-            # Add metadata
             for grant in grants:
                 grant['application_url'] = url
                 grant['state'] = state
                 grant['opportunity_type'] = 'grant'
                 grant['extraction_confidence'] = 0.80
-                
-                # Defaults for missing Runwei fields
                 grant.setdefault('areas_of_focus', [])
                 grant.setdefault('eligibility_requirements', [])
                 grant.setdefault('sdg_alignment', None)

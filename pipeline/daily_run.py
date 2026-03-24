@@ -45,8 +45,6 @@ logging.basicConfig(
 log = logging.getLogger("daily_run")
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
 def run_step(name: str, cmd: list, cwd=None) -> bool:
     """Run a subprocess step. Returns True on success, False on failure."""
     log.info("=" * 60)
@@ -66,8 +64,6 @@ def run_step(name: str, cmd: list, cwd=None) -> bool:
         return False
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
-
 def main():
     parser = argparse.ArgumentParser(description="Daily pipeline orchestration")
     parser.add_argument("--dry-run",          action="store_true", help="Dry-run the sync step")
@@ -84,7 +80,7 @@ def main():
 
     results = {}
 
-    # ── Step 1a: Scrape PA DCED ───────────────────────────────────────────────
+    # Step 1a: PA DCED scraper
     skip_pa = args.skip_scrape or args.skip_pa
     if not skip_pa:
         ok = run_step(
@@ -99,7 +95,7 @@ def main():
         log.info("SKIP: PA DCED scraper")
         results["scrape_pa_dced"] = None
 
-    # ── Step 1b: Multi-state scrapers (NY, MD, DC, PA additional sources) ─────
+    # Step 1b: multi-state scrapers (NY, MD, DC, PA additional sources)
     skip_multi = args.skip_scrape or args.skip_multistate
     if not skip_multi:
         multi_cmd = [PYTHON, "-m", "scrapers.run_all_scrapers"]
@@ -117,7 +113,7 @@ def main():
         log.info("SKIP: multi-state scrapers")
         results["scrape_multistate"] = None
 
-    # ── Step 2: Load all JSON files → scraped_grants ──────────────────────────
+    # Step 2: load JSON → scraped_grants
     ok = run_step(
         "Load scraped_grants",
         [PYTHON, str(PROJECT_ROOT / "pipeline" / "load_scraped_grants.py")],
@@ -128,7 +124,7 @@ def main():
         _print_summary(results, started_at)
         sys.exit(1)
 
-    # ── Step 3: Resolve missing deadlines ─────────────────────────────────────
+    # Step 3: resolve missing deadlines
     if not args.skip_deadlines:
         deadline_cmd = [
             PYTHON, str(PROJECT_ROOT / "pipeline" / "find_deadlines.py"),
@@ -142,9 +138,8 @@ def main():
         log.info("SKIP: deadline-finder (--skip-deadlines)")
         results["deadlines"] = None
 
-    # ── Step 4: AI Enrichment ─────────────────────────────────────────────────
+    # Step 4: AI enrichment
     if not args.skip_enrich:
-        # Check if Azure key is available
         az_key = os.getenv("AZURE_OPENAI_API_KEY") or _read_env_key()
         if not az_key:
             log.warning("AZURE_OPENAI_API_KEY not set — skipping enrichment (pass --skip-enrich to suppress)")
@@ -161,7 +156,7 @@ def main():
         log.info("SKIP: AI enrichment (--skip-enrich)")
         results["enrich"] = None
 
-    # ── Step 5: Sync → opportunities ──────────────────────────────────────────
+    # Step 5: sync → opportunities
     sync_cmd = [PYTHON, str(PROJECT_ROOT / "pipeline" / "sync_opportunities.py")]
     if args.dry_run:
         sync_cmd.append("--dry-run")

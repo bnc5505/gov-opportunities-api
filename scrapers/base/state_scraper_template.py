@@ -1,16 +1,6 @@
 """
-State Scraper Template
-──────────────────────
-Copy this file and fill in the CONFIG section for each new state/source.
-The scraping logic stays the same for every state — only the config changes.
-
-States planned:
-  PA  →  pa_dced_scraper.py          (already built — full deep scraper)
-  DC  →  dc_ovsjg_scraper.py         (already built — PDF focused)
-  NY  →  ny_esd_scraper.py           (use this template)
-  MD  →  md_commerce_scraper.py      (use this template)
-
-For each new source, copy this file, fill in CONFIG, and run.
+State scraper template — copy and fill in CONFIG for each new state/source.
+The scraping logic stays the same; only the config values change.
 """
 
 import os
@@ -28,36 +18,20 @@ from base_scraper import (
     ai_extract, clean_and_validate, load_to_db, log,
 )
 
-# ═══════════════════════════════════════════════════════════════════
-#  CONFIG — Change this section for each new state / source
-# ═══════════════════════════════════════════════════════════════════
+# CONFIG — change this section for each new state/source
 
 CONFIG = {
-    # Unique identifier for this scraper
     "scraper_id":   "ny_esd",
-
-    # State code
     "state":        "NY",
-
-    # The main listing page where grants are listed
     "listing_url":  "https://esd.ny.gov/doing-business-ny/funding-opportunities",
-
-    # Base domain — used to resolve relative links
     "base_url":     "https://esd.ny.gov",
-
-    # Domain filter — only follow links from this domain
     "domain":       "esd.ny.gov",
-
-    # Output JSON file name
     "output_file":  "ny_esd_grants_raw.json",
-
-    # Words that must appear in a link URL or text for it to look like a grant
     "grant_keywords": [
         "grant", "funding", "opportunity", "program", "award",
         "loan", "incentive", "assistance", "support",
     ],
-
-    # Words that indicate a link is NOT a grant page — skip these
+    # links matching these are skipped
     "skip_keywords": [
         "login", "contact", "about", "news", "events", "sitemap",
         "privacy", "facebook", "twitter", "linkedin", "youtube",
@@ -65,10 +39,6 @@ CONFIG = {
     ],
 }
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  SCRAPER — Same logic for every state
-# ═══════════════════════════════════════════════════════════════════
 
 def scrape_listing(config: Dict) -> List[Dict]:
     """Layer 1 — Collect all grant links from the listing page or sitemap."""
@@ -78,7 +48,7 @@ def scrape_listing(config: Dict) -> List[Dict]:
     links = []
     seen  = set()
 
-    # ── Handle sitemap.xml discovery ──────────────────────────────
+    # Sitemap discovery
     if listing_url.endswith(".xml"):
         r = safe_get(listing_url)
         if r:
@@ -104,8 +74,7 @@ def scrape_listing(config: Dict) -> List[Dict]:
                     if not url:
                         continue
 
-                    # If this is a nested sitemap index, fetch it too
-                    if url.endswith(".xml"):
+                    if url.endswith(".xml"):  # nested sitemap index
                         sub_r = safe_get(url)
                         if sub_r:
                             sub_urls = re.findall(
@@ -129,7 +98,7 @@ def scrape_listing(config: Dict) -> List[Dict]:
             except Exception as e:
                 log.warning(f"  Sitemap parse failed: {e} — falling back to seed URLs only")
 
-    # ── Handle seed_urls (hardcoded known grant pages) ─────────────
+    # Seed URLs (hardcoded known grant pages)
     for seed_url in config.get("seed_urls", []):
         if seed_url not in seen:
             seen.add(seed_url)
@@ -137,7 +106,7 @@ def scrape_listing(config: Dict) -> List[Dict]:
             links.append({"url": seed_url, "name": name})
             log.info(f"  Seed: {name}")
 
-    # ── Standard HTML listing page ─────────────────────────────────
+    # Standard HTML listing page
     if not listing_url.endswith(".xml"):
         r = safe_get(listing_url)
         if not r:

@@ -1,11 +1,6 @@
 """
-DC OVSJG Grant Scraper
-
-This scraper extracts grant opportunities from the DC Office of Victim 
-Services and Justice Grants website. It finds all PDF links on the main
-funding opportunities page, downloads each PDF, and extracts the grant details.
-
-The data is then cleaned and prepared for insertion into the database.
+DC OVSJG scraper — extracts grants from the DC Office of Victim Services and Justice Grants.
+Finds PDF links on the funding opportunities page, downloads each, and parses grant details.
 """
 
 import requests
@@ -18,114 +13,68 @@ from typing import List, Dict, Optional
 
 
 def scrape_dc_ovsjg_grants() -> List[Dict]:
-    """
-    Main function that scrapes all grants from DC OVSJG website.
-    
-    Returns a list of dictionaries, each containing one grant's data.
-    """
+    """Scrape all grants from DC OVSJG website. Returns list of grant dicts."""
     print("Starting DC OVSJG scraper...")
-    
-    # The main page that lists all current funding opportunities
+
     main_url = "https://ovsjg.dc.gov/page/funding-opportunities-current"
-    
-    # Get the main page
-    print(f"Fetching main page: {main_url}")
+
     response = requests.get(main_url)
-    
     if response.status_code != 200:
         print(f"Failed to fetch main page. Status code: {response.status_code}")
         return []
-    
-    # Parse the HTML
+
     soup = BeautifulSoup(response.content, 'html.parser')
-    
-    # Find all links on the page
-    all_links = soup.find_all('a', href=True)
-    
-    # Filter for PDF links
+
     pdf_links = []
-    for link in all_links:
+    for link in soup.find_all('a', href=True):
         href = link['href']
         if href.endswith('.pdf'):
-            # Handle relative URLs
             if not href.startswith('http'):
                 href = 'https://ovsjg.dc.gov' + href
-            pdf_links.append({
-                'url': href,
-                'title': link.get_text(strip=True)
-            })
-    
+            pdf_links.append({'url': href, 'title': link.get_text(strip=True)})
+
     print(f"Found {len(pdf_links)} PDF links")
-    
-    # Extract data from each PDF
+
     grants = []
     for idx, pdf_info in enumerate(pdf_links, 1):
         print(f"\nProcessing PDF {idx}/{len(pdf_links)}: {pdf_info['title']}")
         grant_data = extract_grant_from_pdf(pdf_info['url'], pdf_info['title'])
-        
         if grant_data:
             grants.append(grant_data)
             print(f"  ✓ Extracted grant: {grant_data['title']}")
         else:
             print(f"  ✗ Failed to extract data")
-    
+
     print(f"\n=== SCRAPING COMPLETE ===")
     print(f"Successfully extracted {len(grants)} grants")
-    
+
     return grants
 
 
 def extract_grant_from_pdf(pdf_url: str, link_text: str) -> Optional[Dict]:
-    """
-    Download a PDF and extract grant information from it.
-    
-    Args:
-        pdf_url: URL to the PDF file
-        link_text: Text from the link (used as fallback title)
-    
-    Returns:
-        Dictionary with grant data, or None if extraction fails
-    """
+    """Download a PDF and extract grant data. Returns None on failure."""
     try:
-        # Download the PDF
         response = requests.get(pdf_url, timeout=30)
-        
         if response.status_code != 200:
             print(f"    Failed to download PDF: {response.status_code}")
             return None
-        
-        # Read PDF content
+
         pdf_file = io.BytesIO(response.content)
         pdf_reader = PyPDF2.PdfReader(pdf_file)
-        
-        # Extract text from first 5 pages (most info is usually there)
+
         full_text = ""
         for page_num in range(min(5, len(pdf_reader.pages))):
-            page = pdf_reader.pages[page_num]
-            full_text += page.extract_text()
-        
-        # Parse the text to extract grant data
-        grant_data = parse_grant_text(full_text, pdf_url, link_text)
-        
-        return grant_data
-        
+            full_text += pdf_reader.pages[page_num].extract_text()
+
+        return parse_grant_text(full_text, pdf_url, link_text)
+
     except Exception as e:
         print(f"    Error processing PDF: {str(e)}")
         return None
 
 
 def parse_grant_text(text: str, application_url: str, fallback_title: str) -> Dict:
-    """
-    Parse the PDF text and extract structured grant data.
-    
-    Args:
-        text: Full text extracted from PDF
-        application_url: URL to the PDF (used as application link)
-        fallback_title: Fallback title if we can't extract from PDF
-    
-    Returns:
-        Dictionary with grant data
-    """
+    """Parse PDF text and return structured grant data."""
     grant = {
         'title': fallback_title,
         'description': '',
@@ -143,12 +92,10 @@ def parse_grant_text(text: str, application_url: str, fallback_title: str) -> Di
         'raw_text': text[:2000]  # Store first 2000 chars for reference
     }
     
-    # Extract title (look for "Request for Applications" or similar)
     title_match = re.search(r'FY\s*\d{4}.*?(?:Request for Applications|RFA|Grant)', text, re.IGNORECASE)
     if title_match:
         grant['title'] = title_match.group(0).strip()
     
-    # Extract deadline
     deadline_patterns = [
         r'Application Deadline:\s*(\d{1,2}/\d{1,2}/\d{4})',
         r'Deadline:\s*(\d{1,2}/\d{1,2}/\d{4})',
@@ -160,18 +107,15 @@ def parse_grant_text(text: str, application_url: str, fallback_title: str) -> Di
         if match:
             try:
                 date_str = match.group(1)
-                # Try to parse the date
                 if '/' in date_str:
                     grant['deadline'] = date_str
                 else:
-                    # Convert "January 13, 2026" to "01/13/2026"
                     parsed = datetime.strptime(date_str, '%B %d, %Y')
                     grant['deadline'] = parsed.strftime('%m/%d/%Y')
                 break
             except:
                 pass
     
-    # Extract posted/release date
     posted_patterns = [
         r'Application Release:\s*(\w+\s+\d{1,2},\s*\d{4})',
         r'Release Date:\s*(\d{1,2}/\d{1,2}/\d{4})',
@@ -191,21 +135,16 @@ def parse_grant_text(text: str, application_url: str, fallback_title: str) -> Di
             except:
                 pass
     
-    # Extract description (look for overview/executive summary section)
-    desc_match = re.search(r'(?:Overview|Executive Summary|Description)[:\s]+(.*?)(?:\n\n|Section|SECTION)', 
+    desc_match = re.search(r'(?:Overview|Executive Summary|Description)[:\s]+(.*?)(?:\n\n|Section|SECTION)',
                           text, re.IGNORECASE | re.DOTALL)
     if desc_match:
-        description = desc_match.group(1).strip()
-        # Clean up extra whitespace
-        description = re.sub(r'\s+', ' ', description)
+        description = re.sub(r'\s+', ' ', desc_match.group(1).strip())
         grant['description'] = description[:1000]  # Limit to 1000 chars
     
-    # Extract contact email
     email_match = re.search(r'[\w\.-]+@[\w\.-]+\.[\w]+', text)
     if email_match:
         grant['contact_email'] = email_match.group(0)
     
-    # Check if individuals can apply
     if re.search(r'\bindividual\b', text, re.IGNORECASE):
         grant['eligibility_individual'] = True
     
@@ -230,11 +169,7 @@ def main():
 
 
 def save_to_json(grants: List[Dict], filename: str = 'dc_grants.json'):
-    """
-    Save scraped grants to a JSON file for later processing.
-    Once we get the column spec from Dr. Stafford, we'll build
-    the database insertion layer to map this data to the correct schema.
-    """
+    """Save scraped grants to a JSON file."""
     import json
     from datetime import datetime
     

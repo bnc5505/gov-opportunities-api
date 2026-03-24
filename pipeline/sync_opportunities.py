@@ -13,7 +13,7 @@ Live-ready criteria:
   - status in (active, rolling, expiring_soon, recently_closed, unverified)
 
 Upsert:
-  - opportunity_key = sha256(state_code + "|" + application_url)
+  - opportunity_key = sha256(state_code + "|" + opportunity_url)  [fallback: application_url]
   - If key exists → UPDATE + last_synced_at
   - If new        → INSERT
 
@@ -54,10 +54,13 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-MIN_SCORE    = 0.40
-REVIEW_BELOW = 0.60
+MIN_SCORE      = 0.50   # base minimum score
+HIGH_SCORE     = 0.70   # grants above this go live regardless of award size
+MIN_AWARD      = 5000   # grants below HIGH_SCORE need at least this award_min to go live
+REVIEW_BELOW   = 0.70   # flag for human review below this score
 
-LIVE_STATUSES = {"active", "rolling", "expiring_soon", "recently_closed", "unverified"}
+# only push grants that are currently open or rolling
+LIVE_STATUSES = {"active", "rolling", "expiring_soon"}
 
 STATUS_MAP = {
     "active":          "active",
@@ -68,37 +71,78 @@ STATUS_MAP = {
 }
 
 SOURCE_NAME_MAP = {
-    "pa_dced_grants_raw.json":     "PA DCED Programs",
+    # Pennsylvania
+    "pa_dced_grants_raw.json":        "PA DCED Programs",
+    "pa_gov_grants_raw.json":         "PA Official Grants Directory",
+    "pa_dli_grants_raw.json":         "PA Dept of Labor & Industry",
+    "pa_dcnr_grants_raw.json":        "PA DCNR Conservation Grants",
+    "pa_pennvest_grants_raw.json":    "PennVEST Water & Infrastructure",
+    "pa_pema_grants_raw.json":        "PEMA Emergency Management Grants",
+    "pa_agriculture_grants_raw.json": "PA Dept of Agriculture Grants",
+    # DC
     "dc_ovsjg_grants_raw.json":    "DC OVSJG Grants",
     "dc_dslbd_grants_raw.json":    "DC Small Business Grants",
+    # Maryland
     "md_commerce_grants_raw.json": "Maryland Commerce Funding",
     "md_bworks_grants_raw.json":   "Maryland Business Works",
     "md_dhcd_grants_raw.json":     "Maryland DHCD Housing",
     "md_grants_portal_raw.json":   "Maryland Grants Portal",
+    "md_msde_grants_raw.json":     "MD State Dept of Education Grants",
+    # New York
     "ny_esd_grants_raw.json":      "NY ESD Grants",
     "ny_grants_gateway_raw.json":  "NY Grants Gateway",
     "ny_nyserda_grants_raw.json":  "NY NYSERDA",
     "ny_gov_grants_raw.json":      "NY Gov Grants",
+    "ny_empire_grants_raw.json":   "NY Empire State Development",
+    "ny_dos_grants_raw.json":      "NY Dept of State – Community Grants",
+    "ny_nysca_grants_raw.json":    "NY State Council on the Arts",
+    "ny_health_grants_raw.json":   "NY Dept of Health Grant Programs",
+    "ny_ocfs_grants_raw.json":     "NY Office of Children & Family Services",
+    "ny_nysed_grants_raw.json":    "NY State Education Dept Grants",
+    "ny_homes_grants_raw.json":    "NY Homes & Community Renewal",
 }
 SOURCE_URLS = {
-    "pa_dced_grants_raw.json":     "https://dced.pa.gov/programs/",
+    # Pennsylvania
+    "pa_dced_grants_raw.json":        "https://dced.pa.gov/programs/",
+    "pa_gov_grants_raw.json":         "https://www.pa.gov/guides/grants/",
+    "pa_dli_grants_raw.json":         "https://www.dli.pa.gov/Businesses/Workforce-Development/Pages/Grants.aspx",
+    "pa_dcnr_grants_raw.json":        "https://www.dcnr.pa.gov/Grants/Pages/default.aspx",
+    "pa_pennvest_grants_raw.json":    "https://www.pennvestinvestments.com/",
+    "pa_pema_grants_raw.json":        "https://www.pema.pa.gov/Grants/Pages/default.aspx",
+    "pa_agriculture_grants_raw.json": "https://www.agriculture.pa.gov/Grants/Pages/default.aspx",
+    # DC
     "dc_ovsjg_grants_raw.json":    "https://ovsjg.dc.gov/page/funding-opportunities-current",
     "dc_dslbd_grants_raw.json":    "https://dslbd.dc.gov/",
+    # Maryland
     "md_commerce_grants_raw.json": "https://commerce.maryland.gov/fund",
     "md_bworks_grants_raw.json":   "https://bworks.maryland.gov/",
     "md_dhcd_grants_raw.json":     "https://dhcd.maryland.gov/",
     "md_grants_portal_raw.json":   "https://grants.maryland.gov/",
+    "md_msde_grants_raw.json":     "https://marylandpublicschools.org/about/pages/ofpos/gac/grantprograms/index.aspx",
+    # New York
     "ny_esd_grants_raw.json":      "https://esd.ny.gov/",
     "ny_grants_gateway_raw.json":  "https://grantsgateway.ny.gov/",
     "ny_nyserda_grants_raw.json":  "https://www.nyserda.ny.gov/",
     "ny_gov_grants_raw.json":      "https://www.grants.ny.gov/",
+    "ny_empire_grants_raw.json":   "https://esd.ny.gov/funding-opportunities",
+    "ny_dos_grants_raw.json":      "https://www.dos.ny.gov/funding/index.html",
+    "ny_nysca_grants_raw.json":    "https://www.nysca.org/apply/",
+    "ny_health_grants_raw.json":   "https://www.health.ny.gov/funding/",
+    "ny_ocfs_grants_raw.json":     "https://ocfs.ny.gov/main/grants/",
+    "ny_nysed_grants_raw.json":    "https://www.nysed.gov/grants",
+    "ny_homes_grants_raw.json":    "https://hcr.ny.gov/funding-opportunities",
 }
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def make_key(state_code: str, application_url: str) -> str:
-    raw = f"{state_code.lower()}|{(application_url or '').lower().rstrip('/')}"
+def make_key(state_code: str, opportunity_url: str, application_url: str = "") -> str:
+    """
+    Use opportunity_url (the unique source page) as the dedup anchor.
+    Multiple grants often share a single generic application portal URL,
+    so application_url alone is not a reliable unique key.
+    Falls back to application_url if opportunity_url is absent.
+    """
+    anchor = (opportunity_url or application_url or "").lower().rstrip("/")
+    raw = f"{state_code.lower()}|{anchor}"
     return hashlib.sha256(raw.encode()).hexdigest()[:64]
 
 
@@ -126,16 +170,20 @@ def parse_json_field(value):
 def is_live_ready(row, min_score: float) -> bool:
     if not row["title"] or not row["application_url"]:
         return False
-    if (row["data_quality_score"] or 0) < min_score:
+    score = row["data_quality_score"] or 0
+    if score < min_score:
         return False
     if (row["status"] or "").lower() not in LIVE_STATUSES:
         return False
     if not row["deadline"] and not row["rolling"]:
         return False
+    # high-quality grants go live as-is
+    # lower-scored grants need a significant award amount to be worth showing
+    award_min = row["award_min"] or 0
+    if score < HIGH_SCORE and award_min < MIN_AWARD:
+        return False
     return True
 
-
-# ── DB helpers ────────────────────────────────────────────────────────────────
 
 _state_cache  = {}
 _source_cache = {}
@@ -164,11 +212,12 @@ def get_or_create_source(conn, source_file: str) -> int:
     else:
         code = source_file.split("_")[0].upper()
         sid  = get_state_id(conn, code) if len(code) == 2 else None
+        now = datetime.utcnow().isoformat()
         conn.execute(text("""
             INSERT INTO sources (name, url, state_id, scraper_type, scrape_frequency_hours,
-                                 is_active)
-            VALUES (:name, :url, :sid, 'scraper', 24, 1)
-        """), {"name": name, "url": url, "sid": sid})
+                                 is_active, created_at, updated_at)
+            VALUES (:name, :url, :sid, 'scraper', 24, 1, :now, :now)
+        """), {"name": name, "url": url, "sid": sid, "now": now})
         row2 = conn.execute(
             text("SELECT id FROM sources WHERE name = :n"), {"n": name}
         ).fetchone()
@@ -176,13 +225,12 @@ def get_or_create_source(conn, source_file: str) -> int:
     return _source_cache[source_file]
 
 
-# ── Core upsert (raw SQL) ─────────────────────────────────────────────────────
-
 def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
     """Returns (action, opportunity_id, queued)."""
     state_code = (row["state"] or "").upper()
     app_url    = (row["application_url"] or "").strip()
-    key        = make_key(state_code, app_url)
+    opp_url    = (row["opportunity_url"] or "").strip()
+    key        = make_key(state_code, opp_url, app_url)
 
     state_id   = get_state_id(conn, state_code)
     source_id  = get_or_create_source(conn, row["source_file"] or "")
@@ -299,7 +347,7 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
     needs  = bool(row["needs_review"])
     if opp_id and (score < REVIEW_BELOW or needs):
         existing_q = conn.execute(
-            text("SELECT id FROM review_queue WHERE opportunity_id=:oid AND reviewed=0"),
+            text("SELECT id FROM review_queue WHERE opportunity_id=:oid AND review_status='pending'"),
             {"oid": opp_id}
         ).fetchone()
         if not existing_q:
@@ -309,15 +357,13 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
             if needs:
                 reasons.append("scraper_flagged")
             conn.execute(text("""
-                INSERT INTO review_queue (opportunity_id, reason, reviewed, created_at)
-                VALUES (:oid, :reason, 0, datetime('now'))
+                INSERT INTO review_queue (opportunity_id, reason, review_status, created_at)
+                VALUES (:oid, :reason, 'pending', datetime('now'))
             """), {"oid": opp_id, "reason": "; ".join(reasons)})
             queued = True
 
     return action, opp_id, queued
 
-
-# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main(dry_run=False, min_score=MIN_SCORE):
     db = database.SessionLocal()
@@ -359,7 +405,6 @@ def main(dry_run=False, min_score=MIN_SCORE):
     finally:
         db.close()
 
-    # ── Summary ───────────────────────────────────────────────────────────────
     print(f"\n{'='*60}")
     print(f"SYNC COMPLETE{'  [DRY-RUN]' if dry_run else ''}")
     print(f"{'='*60}")
@@ -374,7 +419,7 @@ def main(dry_run=False, min_score=MIN_SCORE):
         try:
             total  = db2.execute(text("SELECT COUNT(*) FROM opportunities")).scalar()
             active = db2.execute(text("SELECT COUNT(*) FROM opportunities WHERE status='active'")).scalar()
-            pending= db2.execute(text("SELECT COUNT(*) FROM review_queue WHERE reviewed=0")).scalar()
+            pending= db2.execute(text("SELECT COUNT(*) FROM review_queue WHERE review_status='pending'")).scalar()
             print(f"\nopportunities table: {total} total, {active} active")
             print(f"review_queue:        {pending} pending review")
             print(f"\nTop 10 by data_quality_score:")

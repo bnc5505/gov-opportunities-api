@@ -1,14 +1,6 @@
 """
-Base Scraper — Shared Logic for All State Scrapers
-
-Every state scraper inherits from this.
-Contains:
-  - Intelligent date extraction (all formats including annual)
-  - Intelligent amount extraction
-  - PDF downloader and text extractor
-  - Azure AI final pass
-  - Data cleaner and validator
-  - Database loader
+Base scraper utilities shared by all state scrapers.
+Provides date/amount extraction, PDF handling, Azure AI enrichment, and DB loading.
 """
 
 import re
@@ -25,10 +17,15 @@ from datetime import datetime
 from dateutil import parser as dateutil_parser
 from typing import Optional, Dict, List, Any
 from openai import AzureOpenAI
+from pathlib import Path
 
-# ─────────────────────────────────────────────
-# Logging setup
-# ─────────────────────────────────────────────
+# Load .env from project root so Azure credentials are available
+try:
+    from dotenv import load_dotenv as _load_dotenv
+    _load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
+except ImportError:
+    pass  # python-dotenv not installed; rely on shell environment
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
@@ -36,9 +33,6 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────
-# Constants
-# ─────────────────────────────────────────────
 TODAY      = datetime.today()
 THIS_YEAR  = TODAY.year
 NEXT_YEAR  = THIS_YEAR + 1
@@ -57,10 +51,6 @@ AI_TEXT_LIMIT   = 14000  # Max chars sent to Azure AI per call
 REQUEST_TIMEOUT = 30
 REQUEST_DELAY   = 1.2    # Seconds between requests — be polite to servers
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  DATE INTELLIGENCE
-# ═══════════════════════════════════════════════════════════════════
 
 def clean_ordinal(text: str) -> str:
     """
@@ -144,7 +134,7 @@ def extract_date(text: str) -> Dict:
         "needs_review": False,
     }
 
-    # ── Layer 1: Rolling / open-ended ───────────────────────────────
+    # Layer 1: rolling / open-ended
     rolling_phrases = [
         "rolling basis", "rolling deadline", "rolling admissions",
         "ongoing", "open-ended", "open ended", "no deadline",
@@ -157,7 +147,7 @@ def extract_date(text: str) -> Dict:
             result.update(rolling=True, confidence="high", raw_text=phrase)
             return result
 
-    # ── Layer 2: Annual / every-year patterns ───────────────────────
+    # Layer 2: annual / every-year patterns
     annual_patterns = [
         r"(\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?[A-Za-z]+)\s+every\s+year",
         r"([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?)\s+every\s+year",
@@ -188,7 +178,7 @@ def extract_date(text: str) -> Dict:
                 )
                 return result
 
-    # ── Layer 3: Trigger words ───────────────────────────────────────
+    # Layer 3: trigger words (deadline, due, closes, etc.)
     trigger_patterns = [
         r"deadline[:\s\-]+([A-Za-z0-9,\s/\.]+?(?:\d{4}|\d{2}))",
         r"due\s+(?:date\s+)?[:\-]?\s*([A-Za-z0-9,\s/\.]+?(?:\d{4}|\d{2}))",
@@ -216,7 +206,7 @@ def extract_date(text: str) -> Dict:
                 )
                 return result
 
-    # ── Layer 4: Any full date in text ──────────────────────────────
+    # Layer 4: any full date in text
     full_date_patterns = [
         r"\b(\d{1,2}/\d{1,2}/\d{4})\b",
         r"\b(\d{1,2}/\d{1,2}/\d{2})\b",
@@ -244,7 +234,7 @@ def extract_date(text: str) -> Dict:
         )
         return result
 
-    # ── Layer 5: Month + day only, no year ─────────────────────────
+    # Layer 5: month + day only, no year → infer year
     no_year_patterns = [
         r"\b([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?)\b",
         r"\b(\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?[A-Za-z]+)\b",
@@ -268,10 +258,6 @@ def extract_date(text: str) -> Dict:
     result["needs_review"] = True
     return result
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  AMOUNT INTELLIGENCE
-# ═══════════════════════════════════════════════════════════════════
 
 def safe_multiply(match_str: str, multiplier: float) -> str:
     """
@@ -347,7 +333,6 @@ def extract_amount(text: str) -> Dict:
         except (ValueError, TypeError):
             return None
 
-    # Range patterns
     range_patterns = [
         r"\$([0-9,]+)\s+to\s+\$([0-9,]+)",
         r"\$([0-9,]+)\s*[-–—]\s*\$([0-9,]+)",
@@ -367,7 +352,6 @@ def extract_amount(text: str) -> Dict:
                 result["award_text"] = m.group(0)
                 return result
 
-    # Maximum / up-to patterns
     max_patterns = [
         r"up\s+to\s+\$([0-9,]+)",
         r"maximum\s+(?:award|grant|funding|amount)?\s*(?:of\s+)?\$([0-9,]+)",
@@ -386,7 +370,6 @@ def extract_amount(text: str) -> Dict:
                 result["award_text"] = m.group(0)
                 return result
 
-    # Total funding pool
     total_patterns = [
         r"total\s+(?:program\s+)?funding\s+(?:of\s+|available\s+)?\$([0-9,]+)",
         r"\$([0-9,]+)\s+(?:in\s+)?total\s+(?:program\s+)?funding",
@@ -402,7 +385,6 @@ def extract_amount(text: str) -> Dict:
                 result["award_text"]    = m.group(0)
                 return result
 
-    # Any dollar amount as last resort
     amounts = re.findall(r"\$([0-9,]+)", text)
     if amounts:
         nums = []
@@ -421,10 +403,6 @@ def extract_amount(text: str) -> Dict:
 
     return result
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  HTTP HELPERS
-# ═══════════════════════════════════════════════════════════════════
 
 def safe_get(url: str, retries: int = 3) -> Optional[requests.Response]:
     """GET with retries and polite delay."""
@@ -463,10 +441,6 @@ def extract_pdf_text(url: str) -> Optional[str]:
         log.warning(f"  PDF extract error: {e}")
         return None
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  AZURE AI FINAL PASS
-# ═══════════════════════════════════════════════════════════════════
 
 def ai_extract(combined_text: str, source_url: str, state: str) -> Optional[Dict]:
     """
@@ -561,10 +535,6 @@ TEXT TO ANALYZE (source: {source_url}):
         return None
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  DATA CLEANER & VALIDATOR
-# ═══════════════════════════════════════════════════════════════════
-
 def calculate_quality_score(grant: Dict) -> float:
     """
     Score from 0.0 to 1.0 based on how many key fields are populated.
@@ -599,7 +569,6 @@ def clean_and_validate(raw: Dict, state: str, source_url: str) -> Dict:
     """
     grant = raw.copy()
 
-    # Ensure required fields exist
     grant.setdefault("title",                    "Untitled Grant")
     grant.setdefault("description",              None)
     grant.setdefault("summary",                  None)
@@ -629,12 +598,10 @@ def clean_and_validate(raw: Dict, state: str, source_url: str) -> Dict:
     grant.setdefault("sponsor_website",          None)
     grant.setdefault("key_requirements",         [])
 
-    # Metadata
     grant["state"]            = state
     grant["opportunity_type"] = "grant"
     grant["extracted_at"]     = datetime.utcnow().isoformat()
 
-    # Trim long strings
     if grant["title"]:
         grant["title"] = grant["title"].strip()[:500]
     if grant["description"]:
@@ -642,24 +609,19 @@ def clean_and_validate(raw: Dict, state: str, source_url: str) -> Dict:
     if grant["summary"]:
         grant["summary"] = grant["summary"].strip()[:1000]
 
-    # Ensure lists are actually lists
     for list_field in ["tags", "areas_of_focus", "sdg_alignment",
                        "eligible_applicant_types", "key_requirements"]:
         v = grant.get(list_field)
         if not isinstance(v, list):
             grant[list_field] = [v] if v else []
 
-    # Quality score
     grant["data_quality_score"] = calculate_quality_score(grant)
-
-    # Decide if needs human review
     grant["needs_review"] = (
         grant["data_quality_score"] < 0.5
         or not grant["deadline"]
         or grant.get("needs_review", False)
     )
 
-    # Determine status
     if grant["rolling"]:
         grant["status"] = "rolling"
     elif grant["deadline"]:
@@ -679,10 +641,6 @@ def clean_and_validate(raw: Dict, state: str, source_url: str) -> Dict:
 
     return grant
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  DATABASE LOADER
-# ═══════════════════════════════════════════════════════════════════
 
 def load_to_db(grants: List[Dict], db_session) -> Dict:
     """
@@ -711,7 +669,6 @@ def load_to_db(grants: List[Dict], db_session) -> Dict:
                 skipped += 1
                 continue
 
-            # Duplicate check
             exists = db_session.query(Opportunity).filter(
                 Opportunity.application_url == app_url
             ).first()
@@ -720,12 +677,10 @@ def load_to_db(grants: List[Dict], db_session) -> Dict:
                 skipped += 1
                 continue
 
-            # Resolve state
             state_obj = db_session.query(StateModel).filter(
                 StateModel.code == g["state"]
             ).first()
 
-            # Resolve or create source
             base_url = "/".join(app_url.split("/")[:3])
             source   = db_session.query(Source).filter(
                 Source.url == base_url
@@ -741,7 +696,6 @@ def load_to_db(grants: List[Dict], db_session) -> Dict:
                 db_session.add(source)
                 db_session.flush()
 
-            # Parse dates
             deadline    = None
             posted_date = None
             if g.get("deadline"):
