@@ -124,7 +124,9 @@ def get_opportunity(opportunity_id: int, db: Session = Depends(get_db)):
 
 @router.post("", response_model=OpportunityResponse, status_code=201)
 def create_opportunity(payload: OpportunityCreate, db: Session = Depends(get_db)):
-    opp = Opportunity(**payload.model_dump())
+    # exclude relationship helpers — they're not ORM columns
+    data = payload.model_dump(exclude={"category_ids", "applicant_type_ids"})
+    opp = Opportunity(**data)
     db.add(opp)
     db.commit()
     db.refresh(opp)
