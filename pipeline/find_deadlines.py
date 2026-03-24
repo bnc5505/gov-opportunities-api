@@ -38,7 +38,6 @@ import requests
 from datetime import datetime, date
 from pathlib import Path
 
-# ── Path setup ────────────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent   # pipeline/../ = project root
 APP_DIR      = PROJECT_ROOT / "app"
 DATA_ROOT    = PROJECT_ROOT / "data"
@@ -73,29 +72,17 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml",
 }
 
-# ── Boilerplate patterns to strip from combined_text ─────────────────────────
-# These are nav/footer chunks that appear on every PA DCED page and confuse
-# date extraction.
+# Nav/footer chunks that appear on every state page and confuse date extraction
 BOILERPLATE_PATTERNS = [
-    # PA DCED full nav block
     r"Why PA\s+Pennsylvania Profile.*?Compare Communities",
-    # Footer copyright block
     r"©\s*\d{4}\s+Commonwealth of Pennsylvania.*?Back To Top",
-    # Cookie consent
     r"By clicking the continue button.*?CONTINUE",
-    # Newsletter signup
     r'"\s*\*\s*"\s+indicates required fields.*?Newsletter Sign Up Confirmation',
-    # Social media links block
     r"Feeling Social\? Follow Us!.*?Newsletter",
-    # Generic nav repeats
     r"About Us\s+Library\s+Translate\s+Facebook.*?Newsletter\s+Search",
-    # Repeated "Most Viewed Programs" sidebar
     r"Most Viewed Programs\s+Educational Improvement.*?And many more\.\.\.",
-    # "Interested in doing business" footer CTA
     r"Interested in doing business in Pennsylvania\?.*?Check Now",
-    # DC.gov footer
     r"Follow Us on X\s+Facebook\s+Mobile.*?About DC\.Gov",
-    # NY ESD boilerplate
     r"Empire State Development.*?Privacy Policy",
 ]
 
@@ -103,8 +90,6 @@ BOILERPLATE_RE = re.compile(
     "|".join(BOILERPLATE_PATTERNS),
     re.IGNORECASE | re.DOTALL,
 )
-
-# ── Date extraction helpers ───────────────────────────────────────────────────
 
 MONTH_NAMES = (
     "january|february|march|april|may|june|july|august|"
@@ -326,7 +311,6 @@ def layer1_regex(combined_text):
 # ── Layer 2: Live page re-fetch ───────────────────────────────────────────────
 
 DEADLINE_SECTION_SELECTORS = [
-    # Common heading labels that precede deadline info
     "h2", "h3", "h4", "strong", "b", "dt", "th",
 ]
 
@@ -351,7 +335,6 @@ def layer2_fetch(url):
 
     body_text = soup.get_text(separator="\n")
 
-    # Build focused text from sections near deadline keywords
     focused_parts = []
     for sel in DEADLINE_SECTION_SELECTORS:
         for el in soup.find_all(sel):
@@ -474,8 +457,6 @@ def layer3_ai(client, deploy, text_body, url, state):
         return None, None, None
 
 
-# ── DB update ─────────────────────────────────────────────────────────────────
-
 def update_row(row_id, deadline, rolling, is_annual, dry_run):
     if dry_run:
         log.info(f"    [DRY-RUN] Would set deadline={deadline!r}, rolling={rolling}, is_annual={is_annual}")
@@ -497,10 +478,7 @@ def update_row(row_id, deadline, rolling, is_annual, dry_run):
         db.close()
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
-
 def main(dry_run=False, limit=None, skip_fetch=False, skip_ai=False):
-    # Fetch rows with no deadline
     db = database.SessionLocal()
     try:
         rows = db.execute(
@@ -534,7 +512,7 @@ def main(dry_run=False, limit=None, skip_fetch=False, skip_ai=False):
         is_annual = False
         layer_used = None
 
-        # ── Layer 1: regex on stored combined_text ────────────────────────────
+        # Layer 1: regex on stored combined_text
         entry = url_idx.get(app_url.lower()) or title_idx.get(title.lower())
         if entry:
             ct, src_url, _ = entry
@@ -546,7 +524,7 @@ def main(dry_run=False, limit=None, skip_fetch=False, skip_ai=False):
                 layer_used = "L1-rolling" if not is_annual else "L1-annual"
                 stats["rolling"] += 1
 
-        # ── Layer 2: live re-fetch ─────────────────────────────────────────────
+        # Layer 2: live re-fetch
         if not deadline and not rolling and not skip_fetch:
             log.info("    L1 found nothing — trying live fetch …")
             dl2, roll2, ann2 = layer2_fetch(app_url)
@@ -560,7 +538,7 @@ def main(dry_run=False, limit=None, skip_fetch=False, skip_ai=False):
                 layer_used = "L2-rolling" if not ann2 else "L2-annual"
                 stats["rolling"] += 1
 
-        # ── Layer 3: AI deadline-only prompt ──────────────────────────────────
+        # Layer 3: AI deadline-only prompt
         if not deadline and not rolling and not skip_ai and ai_client:
             log.info("    L2 found nothing — trying AI …")
             # Use freshly-fetched body if available, else fall back to stored text
@@ -588,7 +566,6 @@ def main(dry_run=False, limit=None, skip_fetch=False, skip_ai=False):
         if deadline or rolling:
             update_row(row_id, deadline, rolling, is_annual, dry_run)
 
-    # ── Summary ───────────────────────────────────────────────────────────────
     print(f"\n{'='*60}")
     print("DEADLINE SEARCH COMPLETE")
     print(f"{'='*60}")

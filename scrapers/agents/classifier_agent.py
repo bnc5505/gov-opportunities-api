@@ -1,7 +1,5 @@
 """
-Agent 3: Classifier & Enricher Agent (RUNWEI-ALIGNED)
-
-Classifies grants, enriches metadata, and prepares for Runwei platform.
+Classifier agent — classifies and enriches grant metadata.
 """
 
 import json
@@ -10,19 +8,14 @@ from datetime import datetime, timedelta
 
 
 class ClassifierAgent:
-    """
-    Classifies and enriches grant data for Runwei platform.
-    """
-    
+
     def __init__(self):
-        # Runwei category mapping keywords
         self.category_keywords = {
             'private_opportunities': ['fellowship', 'competition', 'accelerator', 'foundation', 'prize'],
             'government_grants': ['department', 'agency', 'federal', 'state', 'municipal', 'government'],
             'global': ['international', 'worldwide', 'global', 'european', 'africa', 'asia'],
         }
         
-        # Logo placeholder service
         self.logo_placeholder_base = "https://ui-avatars.com/api/?name={}&size=200&background=random"
     
     def classify_grants(self, grants: List[Dict]) -> List[Dict]:
@@ -42,53 +35,37 @@ class ClassifierAgent:
     def _enrich_grant(self, grant: Dict) -> Dict:
         """Enrich a single grant with Runwei metadata."""
         
-        # Classify into Runwei category
         grant['category'] = self._classify_category(grant)
-        
-        # Determine status based on deadline
         grant['status'] = self._determine_status(grant)
-        
-        # Generate logo URL (placeholder for now)
         grant['logo_url'] = self._generate_logo(grant)
-        
-        # Ensure tags exist (default if missing)
+
         if not grant.get('tags') or len(grant.get('tags', [])) == 0:
             grant['tags'] = self._generate_default_tags(grant)
-        
-        # Ensure areas_of_focus exist
+
         if not grant.get('areas_of_focus') or len(grant.get('areas_of_focus', [])) == 0:
             grant['areas_of_focus'] = ['Capacity Building', 'Capital']
-        
-        # Calculate data quality score
+
         grant['data_quality_score'] = self._calculate_quality_score(grant)
-        
-        # Determine if needs human review
         grant['needs_review'] = grant['data_quality_score'] < 0.7 or not grant.get('deadline')
-        
-        # Add enrichment timestamp
         grant['enriched_at'] = datetime.now().isoformat()
-        
-        # Ensure global_locations is set
+
         if 'global_locations' not in grant:
             grant['global_locations'] = None
         
         return grant
     
     def _classify_category(self, grant: Dict) -> str:
-        """Classify into Runwei category: private_opportunities, government_grants, or global."""
+        """Classify into: private_opportunities, government_grants, or global."""
         text = f"{grant.get('title', '')} {grant.get('description', '')}".lower()
-        
-        # Check for global keywords
+
         for keyword in self.category_keywords['global']:
             if keyword in text:
                 return 'global'
         
-        # Check for private keywords
         for keyword in self.category_keywords['private_opportunities']:
             if keyword in text:
                 return 'private_opportunities'
-        
-        # Default to government grants
+
         return 'government_grants'
     
     def _determine_status(self, grant: Dict) -> str:
@@ -116,7 +93,6 @@ class ClassifierAgent:
     
     def _generate_logo(self, grant: Dict) -> str:
         """Generate placeholder logo URL."""
-        # Extract organization name or use title
         title = grant.get('title', 'Grant')
         
         # Get first few words for logo
@@ -158,7 +134,6 @@ class ClassifierAgent:
         for field, weight in weights.items():
             value = grant.get(field)
             if value:
-                # For arrays, check if they have content
                 if isinstance(value, list):
                     if len(value) > 0:
                         score += weight

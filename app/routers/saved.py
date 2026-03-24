@@ -19,7 +19,7 @@ def _get_user_or_404(user_id: int, db: Session) -> User:
     return user
 
 
-# ── Saved Opportunities ──────────────────────────────────────────────────────
+# Saved opportunities
 
 @router.get("/{user_id}/saved-opportunities", response_model=List[SavedOpportunityResponse])
 def list_saved_opportunities(user_id: int, db: Session = Depends(get_db)):
@@ -66,7 +66,7 @@ def unsave_opportunity(user_id: int, saved_id: int, db: Session = Depends(get_db
     db.commit()
 
 
-# ── Saved Searches ───────────────────────────────────────────────────────────
+# Saved searches
 
 @router.get("/{user_id}/saved-searches", response_model=List[SavedSearchResponse])
 def list_saved_searches(user_id: int, db: Session = Depends(get_db)):

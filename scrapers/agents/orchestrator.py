@@ -1,8 +1,5 @@
 """
-Multi-Agent Orchestrator (RUNWEI-ALIGNED)
-
-Coordinates all agents to discover, extract, classify, and save grants.
-Production-ready for Wednesday demo.
+Multi-agent orchestrator — coordinates search, extraction, classification, and DB save.
 """
 
 import json
@@ -22,9 +19,6 @@ from agents.database_agent import DatabaseAgent
 
 
 class GrantDiscoveryOrchestrator:
-    """
-    Master orchestrator - production ready for Runwei integration.
-    """
     
     def __init__(self):
         print("🤖 Initializing Runwei Grant Discovery System...")
@@ -54,9 +48,6 @@ class GrantDiscoveryOrchestrator:
         print(f"States: {', '.join(states)}")
         print()
         
-        # ====================================================================
-        # PHASE 1: Search & Discovery
-        # ====================================================================
         print("📍 PHASE 1: SEARCH & DISCOVERY")
         print("-" * 70)
         
@@ -67,9 +58,6 @@ class GrantDiscoveryOrchestrator:
         
         print(f"\n✓ Phase 1 Complete: Found {len(all_urls)} URLs")
         
-        # ====================================================================
-        # PHASE 2: Content Extraction
-        # ====================================================================
         print("\n📍 PHASE 2: CONTENT EXTRACTION")
         print("-" * 70)
         
@@ -90,16 +78,12 @@ class GrantDiscoveryOrchestrator:
                 else:
                     all_grants.append(result)
             
-            # Stop if we hit max grants
             if len(all_grants) >= max_grants:
                 print(f"\n✓ Reached target of {max_grants} grants, stopping extraction")
                 break
         
         print(f"\n✓ Phase 2 Complete: Extracted {len(all_grants)} grants")
         
-        # ====================================================================
-        # PHASE 3: Classification & Enrichment
-        # ====================================================================
         print("\n📍 PHASE 3: CLASSIFICATION & ENRICHMENT")
         print("-" * 70)
         
@@ -107,9 +91,6 @@ class GrantDiscoveryOrchestrator:
         
         print(f"\n✓ Phase 3 Complete: Classified {len(enriched_grants)} grants")
         
-        # ====================================================================
-        # PHASE 4: Database Save
-        # ====================================================================
         print("\n📍 PHASE 4: DATABASE SAVE")
         print("-" * 70)
         
@@ -117,9 +98,6 @@ class GrantDiscoveryOrchestrator:
         
         print(f"\n✓ Phase 4 Complete: Saved {save_result['saved']} grants")
         
-        # ====================================================================
-        # Generate Statistics
-        # ====================================================================
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         
@@ -143,7 +121,6 @@ class GrantDiscoveryOrchestrator:
             'needs_review_count': sum(1 for g in enriched_grants if g.get('needs_review', True)),
         }
         
-        # Category breakdown
         categories = {}
         statuses = {}
         for grant in enriched_grants:
@@ -156,7 +133,6 @@ class GrantDiscoveryOrchestrator:
         stats['categories'] = categories
         stats['statuses'] = statuses
         
-        # Save pipeline output
         output = {
             'stats': stats,
             'grants': enriched_grants
@@ -166,7 +142,6 @@ class GrantDiscoveryOrchestrator:
         with open(filename, 'w') as f:
             json.dump(output, f, indent=2)
         
-        # Print summary
         self._print_summary(stats, filename)
         
         return stats
@@ -230,19 +205,12 @@ class GrantDiscoveryOrchestrator:
 
 
 def main():
-    """
-    Production run for Wednesday demo.
-    
-    Target: 15-20 quality grants across DC, PA, NY, MD
-    """
     orchestrator = GrantDiscoveryOrchestrator()
-    
+
     try:
-        # Run pipeline
-        # Start with just DC to test, then expand
         stats = orchestrator.discover_grants(
-            states=['DC'],  # Add ['PA', 'NY', 'MD'] after DC works
-            max_grants=10   # Increase to 20 after testing
+            states=['DC'],
+            max_grants=10
         )
         
         print("\n🎯 Next Steps:")

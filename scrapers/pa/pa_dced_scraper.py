@@ -26,19 +26,12 @@ from base_scraper import (
     ai_extract, clean_and_validate, load_to_db, log,
 )
 
-# ─────────────────────────────────────────────
-# Config
-# ─────────────────────────────────────────────
 STATE       = "PA"
 BASE_URL    = "https://dced.pa.gov"
 LISTING_URL = "https://dced.pa.gov/programs/"
 _DATA_DIR   = str(_Path(__file__).resolve().parent.parent.parent / "data" / "pa")
 OUTPUT_FILE = os.path.join(_DATA_DIR, "pa_dced_grants_raw.json")
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  LAYER 1 — Collect all program links from main listing page
-# ═══════════════════════════════════════════════════════════════════
 
 def scrape_listing_page() -> List[Dict]:
     """
@@ -56,9 +49,7 @@ def scrape_listing_page() -> List[Dict]:
     links = []
     seen  = set()
 
-    # DCED actual grant/program pages always follow the pattern:
-    # https://dced.pa.gov/programs/program-name/
-    # We ONLY want these — not nav links, not section pages
+    # only keep /programs/program-name/ pages — not nav links or section pages
     for a in soup.find_all("a", href=True):
         href = a["href"].strip()
         text = a.get_text(strip=True)
@@ -72,25 +63,18 @@ def scrape_listing_page() -> List[Dict]:
 
         parsed = urlparse(href)
 
-        # Only keep dced.pa.gov links
         if "dced.pa.gov" not in parsed.netloc:
             continue
 
-        # Only keep URLs that are actual program detail pages
-        # Real programs look like: /programs/abandoned-mine-drainage/
-        # NOT like: /library/ or /why-pa/ or /pennsylvania/
         path = parsed.path.rstrip("/")
         path_parts = [p for p in path.split("/") if p]
 
-        # Must have at least 2 path parts and first part must be "programs"
         if len(path_parts) < 2 or path_parts[0] != "programs":
             continue
 
-        # Skip the /programs/ root page itself
         if len(path_parts) == 1:
             continue
 
-        # Skip known non-grant sections
         skip_slugs = [
             "archived-programs", "compliance-resources", "how-to-apply",
             "quality-assurance", "investment-tracker", "certified-economic",
@@ -107,10 +91,6 @@ def scrape_listing_page() -> List[Dict]:
     log.info(f"LAYER 1 complete — {len(links)} program pages found")
     return links
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  LAYER 2 — Visit each grant page, extract HTML data + PDF links
-# ═══════════════════════════════════════════════════════════════════
 
 def scrape_grant_page(link_info: Dict) -> Optional[Dict]:
     """
@@ -134,7 +114,6 @@ def scrape_grant_page(link_info: Dict) -> Optional[Dict]:
     soup      = BeautifulSoup(r.content, "html.parser")
     page_text = soup.get_text(separator="\n", strip=True)
 
-    # Collect all PDF links on this page
     pdf_links = []
     seen_pdfs = set()
     for a in soup.find_all("a", href=True):
@@ -150,7 +129,6 @@ def scrape_grant_page(link_info: Dict) -> Optional[Dict]:
                 })
                 log.info(f"  PDF found: {a.get_text(strip=True)[:60]}")
 
-    # Also check for links that go to a sub-page that might have more PDFs
     # DCED sometimes nests grants 2 levels deep
     sub_links = []
     for a in soup.find_all("a", href=True):
@@ -166,7 +144,6 @@ def scrape_grant_page(link_info: Dict) -> Optional[Dict]:
         ):
             sub_links.append(href)
 
-    # Quick date + amount extraction from HTML text before PDF pass
     date_result   = extract_date(page_text)
     amount_result = extract_amount(page_text)
 
@@ -180,10 +157,6 @@ def scrape_grant_page(link_info: Dict) -> Optional[Dict]:
         "html_amount":      amount_result,
     }
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  LAYER 3 — Download PDFs, extract text, run intelligent extraction
-# ═══════════════════════════════════════════════════════════════════
 
 def process_pdfs(page_data: Dict) -> Dict:
     """
@@ -220,10 +193,6 @@ def process_pdfs(page_data: Dict) -> Dict:
     return page_data
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  MERGE — Combine HTML + PDF data intelligently
-# ═══════════════════════════════════════════════════════════════════
-
 def merge_extractions(page_data: Dict) -> Dict:
     """
     Merges data extracted from HTML and all PDFs.
@@ -246,14 +215,12 @@ def merge_extractions(page_data: Dict) -> Dict:
         "needs_review": True,
     }
 
-    # Combine all text for AI pass
     all_texts = [page_data.get("page_text", "")]
     for pdf in page_data.get("pdf_extractions", []):
         all_texts.append(pdf.get("text", ""))
     merged["combined_text"] = "\n\n--- PDF ---\n\n".join(all_texts)
 
-    # ── Best date resolution ─────────────────────────────────────────
-    # Collect all date results with their confidence
+    # best date: high confidence wins
     confidence_rank = {"high": 3, "medium": 2, "low": 1}
     date_candidates = []
 
@@ -273,8 +240,7 @@ def merge_extractions(page_data: Dict) -> Dict:
         merged["is_annual"]    = best.get("is_annual", False)
         merged["needs_review"] = best.get("needs_review", False)
 
-    # ── Best amount resolution ───────────────────────────────────────
-    # Prefer PDFs for financial data — they are more authoritative
+    # best amount: prefer whichever source has the most fields populated
     amount_candidates = []
 
     html_amount = page_data.get("html_amount", {})
@@ -287,7 +253,6 @@ def merge_extractions(page_data: Dict) -> Dict:
             amount_candidates.append(a)
 
     if amount_candidates:
-        # Prefer the one with the most fields populated
         best = max(
             amount_candidates,
             key=lambda x: sum(1 for v in [x.get("award_min"), x.get("award_max"), x.get("total_funding")] if v)
@@ -299,10 +264,6 @@ def merge_extractions(page_data: Dict) -> Dict:
 
     return merged
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  FINAL AI PASS — Send everything to Azure AI for final extraction
-# ═══════════════════════════════════════════════════════════════════
 
 def final_extraction(merged: Dict) -> Dict:
     """
@@ -326,36 +287,27 @@ def final_extraction(merged: Dict) -> Dict:
         log.warning("  AI extraction failed — using regex results only")
         return merged
 
-    # Merge AI result with what we already found
-    # Regex high-confidence date/amount takes priority over AI
+    # regex high-confidence date/amount takes priority over AI
     final = {**ai_result}
 
-    # Keep regex date if it had high confidence
     if merged.get("deadline") and not ai_result.get("deadline"):
         final["deadline"] = merged["deadline"]
 
-    # Keep regex amounts if AI missed them
     if merged.get("award_max") and not ai_result.get("award_max"):
         final["award_max"] = merged["award_max"]
     if merged.get("award_min") and not ai_result.get("award_min"):
         final["award_min"] = merged["award_min"]
 
-    # Keep annual flag
     if merged.get("is_annual"):
         final["is_annual"] = True
         final["rolling"]   = True
 
-    # Ensure source URL is preserved
     final["opportunity_url"] = merged["source_url"]
     if not final.get("application_url"):
         final["application_url"] = merged["source_url"]
 
     return final
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  MAIN PIPELINE
-# ═══════════════════════════════════════════════════════════════════
 
 def run(save_json: bool = True, load_db: bool = False, db_session=None) -> List[Dict]:
     """
@@ -376,7 +328,6 @@ def run(save_json: bool = True, load_db: bool = False, db_session=None) -> List[
 
     start = datetime.now()
 
-    # ── Layer 1: Get all program links ──────────────────────────────
     links = scrape_listing_page()
     if not links:
         log.error("No links found. Exiting.")
@@ -389,24 +340,15 @@ def run(save_json: bool = True, load_db: bool = False, db_session=None) -> List[
         log.info(f"Processing {i}/{len(links)}: {link['name'][:60]}")
         log.info(f"{'─'*60}")
 
-        # ── Layer 2: Scrape the grant page ──────────────────────────
         page_data = scrape_grant_page(link)
         if not page_data:
             continue
 
-        # ── Layer 3: Process PDFs ───────────────────────────────────
         page_data = process_pdfs(page_data)
-
-        # ── Merge HTML + PDF extractions ────────────────────────────
         merged = merge_extractions(page_data)
-
-        # ── Final AI pass ───────────────────────────────────────────
         final = final_extraction(merged)
-
-        # ── Clean and validate ──────────────────────────────────────
         clean = clean_and_validate(final, STATE, link["url"])
 
-        # Log what we got
         log.info(
             f"  Result → title: {clean['title'][:50]} | "
             f"deadline: {clean.get('deadline')} | "
@@ -417,7 +359,6 @@ def run(save_json: bool = True, load_db: bool = False, db_session=None) -> List[
 
         all_grants.append(clean)
 
-    # ── Save to JSON ─────────────────────────────────────────────────
     if save_json:
         os.makedirs(_DATA_DIR, exist_ok=True)
         output = {
@@ -431,13 +372,11 @@ def run(save_json: bool = True, load_db: bool = False, db_session=None) -> List[
             json.dump(output, f, indent=2, default=str)
         log.info(f"\nSaved {len(all_grants)} grants to {OUTPUT_FILE}")
 
-    # ── Load to database ──────────────────────────────────────────────
     if load_db and db_session:
         log.info("\nLoading to database...")
         stats = load_to_db(all_grants, db_session)
         log.info(f"DB result: saved={stats['saved']} skipped={stats['skipped']} errors={stats['errors']}")
 
-    # ── Summary ───────────────────────────────────────────────────────
     duration = (datetime.now() - start).total_seconds()
     active   = [g for g in all_grants if g.get("status") == "active"]
     review   = [g for g in all_grants if g.get("needs_review")]
@@ -455,7 +394,6 @@ def run(save_json: bool = True, load_db: bool = False, db_session=None) -> List[
 
 
 if __name__ == "__main__":
-    # Run standalone without DB
     grants = run(save_json=True, load_db=False)
     print(f"\nDone. {len(grants)} grants extracted.")
     print(f"Output saved to {OUTPUT_FILE}")

@@ -8,7 +8,6 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-# ── Path / env setup ─────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent   # pipeline/../ = project root
 APP_DIR      = PROJECT_ROOT / "app"
 DATA_ROOT    = PROJECT_ROOT / "data"
@@ -30,17 +29,16 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# ── Config ────────────────────────────────────────────────────────────────────
 TARGET_SCORE    = 0.80   # enrich everything below this
 AI_TEXT_LIMIT   = 8_000  # chars of combined_text sent to the model
 RETRY_DELAY_SEC = 2      # pause between API calls to avoid throttling
 THIS_YEAR       = datetime.utcnow().year
 NEXT_YEAR       = THIS_YEAR + 1
 
-# State data directories — auto-discovered at runtime in build_text_index()
+# auto-discovered in build_text_index()
 _STATE_DIRS = ["dc", "md", "ny", "pa"]
 
-# ── Quality score (mirrors base_scraper.calculate_quality_score) ──────────────
+# mirrors base_scraper.calculate_quality_score
 SCORE_WEIGHTS = {
     "title":             0.15,
     "description":       0.10,
@@ -65,7 +63,6 @@ def recalculate_score(fields: dict) -> float:
     return round(score, 2)
 
 
-# ── Load combined_text index from JSON files ──────────────────────────────────
 def build_text_index():
     """
     Returns a dict keyed by application_url → combined_text
@@ -98,7 +95,6 @@ def build_text_index():
     return url_index, title_index
 
 
-# ── Azure OpenAI extraction ───────────────────────────────────────────────────
 def build_client():
     api_key  = os.getenv("AZURE_OPENAI_API_KEY")
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -194,7 +190,6 @@ def ai_extract(client, deploy, combined_text, source_url, state, dry_run=False):
         return None
 
 
-# ── Merge AI result into DB row ───────────────────────────────────────────────
 def merge(row: dict, ai: dict) -> dict:
     """
     Apply AI-extracted values to an existing row dict.
@@ -230,19 +225,15 @@ def merge(row: dict, ai: dict) -> dict:
     return updated
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
 def main(dry_run=False, limit=None, min_score=TARGET_SCORE):
-    # Validate credentials early
     if not dry_run:
         client, deploy = build_client()
     else:
         client, deploy = None, None
         log.info("DRY-RUN mode — no DB writes, no API calls")
 
-    # Build text lookup from raw JSON files
     url_index, title_index = build_text_index()
 
-    # Fetch rows needing enrichment
     db = database.SessionLocal()
     try:
         rows = db.execute(
@@ -271,7 +262,6 @@ def main(dry_run=False, limit=None, min_score=TARGET_SCORE):
 
         log.info(f"[{i}/{total}] {state} | {title[:60]}")
 
-        # Look up combined_text
         entry = url_index.get(app_url) or title_index.get(title.lower())
         if not entry:
             log.warning(f"  No combined_text found — skipping")
@@ -280,7 +270,6 @@ def main(dry_run=False, limit=None, min_score=TARGET_SCORE):
 
         combined_text, source_url, _ = entry
 
-        # Call Azure OpenAI
         ai_result = ai_extract(client, deploy, combined_text, source_url, state, dry_run=dry_run)
 
         if dry_run:
@@ -291,7 +280,6 @@ def main(dry_run=False, limit=None, min_score=TARGET_SCORE):
             skipped_ai_fail += 1
             continue
 
-        # Merge and recalculate score
         row_dict = dict(row)
         merged   = merge(row_dict, ai_result)
 
@@ -303,14 +291,12 @@ def main(dry_run=False, limit=None, min_score=TARGET_SCORE):
 
         new_score = recalculate_score({
             **merged,
-            # parse back to list for score check
             "tags":          json.loads(merged.get("tags") or "[]"),
             "areas_of_focus":json.loads(merged.get("areas_of_focus") or "[]"),
         })
         merged["data_quality_score"] = new_score
         merged["needs_review"]       = new_score < 0.5
 
-        # Write to DB
         db = database.SessionLocal()
         try:
             db.execute(text("""
@@ -364,7 +350,6 @@ def main(dry_run=False, limit=None, min_score=TARGET_SCORE):
         # Brief pause to avoid rate-limiting
         time.sleep(RETRY_DELAY_SEC)
 
-    # ── Final summary ─────────────────────────────────────────────────────────
     print(f"\n{'='*60}")
     print(f"ENRICHMENT COMPLETE")
     print(f"{'='*60}")

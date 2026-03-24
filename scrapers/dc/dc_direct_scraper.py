@@ -62,9 +62,7 @@ SOURCES = [
 ]
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 def fetch(url: str) -> Optional[BeautifulSoup]:
     try:
@@ -100,9 +98,7 @@ def already_exists(db, title: str, source_id: int) -> bool:
     )
 
 
-# ---------------------------------------------------------------------------
 # OVSJG scraper
-# ---------------------------------------------------------------------------
 
 def scrape_ovsjg(source_id: int, agency_id: int, state_id: int, db) -> list[dict]:
     """
@@ -172,9 +168,7 @@ def scrape_ovsjg(source_id: int, agency_id: int, state_id: int, db) -> list[dict
     return grants
 
 
-# ---------------------------------------------------------------------------
 # DC DoH scraper
-# ---------------------------------------------------------------------------
 
 def scrape_doh(source_id: int, agency_id: int, state_id: int, db) -> list[dict]:
     """
@@ -187,7 +181,6 @@ def scrape_doh(source_id: int, agency_id: int, state_id: int, db) -> list[dict]:
 
     grants = []
 
-    # Find all links that look like grant listings
     body = soup.find("div", class_=re.compile(r"field--name-body|node__content|region-content"))
     if not body:
         body = soup.find("main") or soup.find("article") or soup
@@ -283,9 +276,7 @@ def scrape_doh(source_id: int, agency_id: int, state_id: int, db) -> list[dict]:
     return grants
 
 
-# ---------------------------------------------------------------------------
 # DB helpers
-# ---------------------------------------------------------------------------
 
 def get_or_create_source(db, cfg: dict, state_id: int) -> Source:
     source = db.query(Source).filter(Source.url == cfg["url"]).first()
@@ -348,15 +339,11 @@ def save_grant(db, data: dict) -> bool:
     )
     db.add(opp)
     db.flush()
-
-    # Add to review queue
     db.add(ReviewQueue(opportunity_id=opp.id, priority=1, reason="dc_direct_scraper"))
     return True
 
 
-# ---------------------------------------------------------------------------
 # Main pipeline
-# ---------------------------------------------------------------------------
 
 def run():
     db = SessionLocal()
