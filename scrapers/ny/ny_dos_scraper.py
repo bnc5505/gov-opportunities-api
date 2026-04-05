@@ -9,8 +9,8 @@ follows each detail page, runs Azure AI enrichment, saves to JSON.
 import os
 import sys
 import json
-import time
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -28,7 +28,7 @@ sys.path.insert(0, str(APP_DIR))
 
 from base_scraper import (
     safe_get, extract_pdf_text, extract_date, extract_amount,
-    ai_extract, clean_and_validate, log,
+    ai_extract, clean_and_validate, log, _cache,
 )
 
 STATE       = "NY"
@@ -126,6 +126,12 @@ def scrape_detail(link: Dict) -> Optional[Dict]:
     if not r:
         return None
 
+    chash = _cache.content_hash(r.content)
+    cached = _cache.get_if_fresh(url, chash)
+    if cached:
+        log.info(f"    [cache hit] {name[:60]}")
+        return {"_from_cache": True, "_cached_grant": cached, "_content_hash": chash, "url": url}
+
     soup      = BeautifulSoup(r.content, "html.parser")
     page_text = soup.get_text(separator="\n", strip=True)
 
@@ -163,25 +169,32 @@ def scrape_detail(link: Dict) -> Optional[Dict]:
         "application_url": application_url,
         "html_date":       extract_date(page_text),
         "html_amount":     extract_amount(page_text),
+        "_content_hash":   chash,
     }
 
 
 
 def process_pdfs(page: Dict) -> Dict:
-    pdf_extractions = []
-    for pdf in page.get("pdf_links", []):
-        log.info(f"    Extracting PDF: {pdf['label'][:50]}")
+    pdf_links = page.get("pdf_links", [])
+    if not pdf_links:
+        page["pdf_extractions"] = []
+        return page
+
+    def _fetch_one(pdf):
         text = extract_pdf_text(pdf["url"])
         if not text:
-            continue
-        pdf_extractions.append({
+            return None
+        return {
             "url":    pdf["url"],
             "label":  pdf["label"],
             "text":   text,
             "date":   extract_date(text),
             "amount": extract_amount(text),
-        })
-    page["pdf_extractions"] = pdf_extractions
+        }
+
+    with ThreadPoolExecutor(max_workers=3) as exe:
+        results = list(exe.map(_fetch_one, pdf_links))
+    page["pdf_extractions"] = [r for r in results if r]
     return page
 
 
@@ -258,6 +271,7 @@ def ai_pass(merged: Dict) -> Dict:
         return merged
 
     final = {**ai}
+    final["combined_text"] = merged.get("combined_text", "")
 
     if merged.get("deadline") and not ai.get("deadline"):
         final["deadline"] = merged["deadline"]
@@ -286,30 +300,36 @@ def run(save_json: bool = True) -> List[Dict]:
     links  = scrape_listing()
     grants = []
 
-    for i, link in enumerate(links, 1):
-        log.info(f"\n{'─'*60}")
-        log.info(f"{i}/{len(links)}: {link['name'][:65]}")
+    def _process_one(link):
+        page = scrape_detail(link)
+        if not page:
+            return None
+        if page.get("_from_cache"):
+            return page["_cached_grant"]
+        page    = process_pdfs(page)
+        merged  = merge(page)
+        final   = ai_pass(merged)
+        cleaned = clean_and_validate(final, STATE, link["url"])
+        _cache.set(link["url"], page["_content_hash"], cleaned)
+        return cleaned
 
-        try:
-            page = scrape_detail(link)
-            if not page:
-                continue
+    with ThreadPoolExecutor(max_workers=5) as exe:
+        futures = {exe.submit(_process_one, lnk): lnk for lnk in links}
+        for i, fut in enumerate(as_completed(futures), 1):
+            lnk = futures[fut]
+            try:
+                cleaned = fut.result()
+                if cleaned:
+                    log.info(
+                        f"  [{i}/{len(links)}] {lnk['name'][:50]}  "
+                        f"deadline={cleaned.get('deadline')}  "
+                        f"score={cleaned.get('data_quality_score')}"
+                    )
+                    grants.append(cleaned)
+            except Exception as e:
+                log.error(f"  Error processing {lnk.get('name', lnk.get('url', '?'))[:60]}: {e}")
 
-            page    = process_pdfs(page)
-            merged  = merge(page)
-            final   = ai_pass(merged)
-            cleaned = clean_and_validate(final, STATE, link["url"])
-
-            log.info(
-                f"  deadline={cleaned.get('deadline')}  "
-                f"award_max={cleaned.get('award_max')}  "
-                f"score={cleaned.get('data_quality_score')}  "
-                f"status={cleaned.get('status')}"
-            )
-            grants.append(cleaned)
-        except Exception as e:
-            log.error(f"  Skipping {link['url']!r}: {e}")
-        time.sleep(0.5)
+    _cache.flush()
 
     if save_json:
         DATA_DIR.mkdir(parents=True, exist_ok=True)

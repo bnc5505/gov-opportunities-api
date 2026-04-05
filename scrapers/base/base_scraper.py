@@ -10,6 +10,8 @@ import sys
 import json
 import time
 import logging
+import threading
+import hashlib
 import requests
 import PyPDF2
 from bs4 import BeautifulSoup
@@ -33,6 +35,72 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # scrapers/base/../../.. = project root
+_CACHE_PATH   = _PROJECT_ROOT / "data" / "scrape_cache.json"
+
+class ScraperCache:
+    """
+    URL-keyed cache. Stores content hash + extracted grant data.
+    On day 2+, unchanged pages are returned from cache — skipping PDF
+    download and AI calls entirely.
+    Thread-safe via a single lock.
+    """
+    def __init__(self, path: Path):
+        self.path  = path
+        self._lock = threading.Lock()
+        self._data: Dict[str, Any] = {}
+        self._dirty = False
+        self._load()
+
+    def _load(self):
+        if self.path.exists():
+            try:
+                with open(self.path) as f:
+                    self._data = json.load(f)
+                log.info(f"ScraperCache loaded — {len(self._data)} entries from {self.path}")
+            except Exception:
+                self._data = {}
+
+    def flush(self):
+        """Write accumulated changes to disk."""
+        with self._lock:
+            if not self._dirty:
+                return
+            try:
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                with open(self.path, "w") as f:
+                    json.dump(self._data, f)
+                self._dirty = False
+            except Exception as e:
+                log.warning(f"Cache flush failed: {e}")
+
+    @staticmethod
+    def content_hash(content: bytes) -> str:
+        return hashlib.md5(content).hexdigest()
+
+    def get_if_fresh(self, url: str, content_hash: str) -> Optional[Dict]:
+        """Return cached grant if URL exists and content hash matches, else None."""
+        with self._lock:
+            entry = self._data.get(url)
+            if entry and entry.get("hash") == content_hash and entry.get("grant"):
+                return entry["grant"]
+        return None
+
+    def set(self, url: str, content_hash: str, grant: Dict):
+        with self._lock:
+            self._data[url] = {
+                "hash":       content_hash,
+                "scraped_at": datetime.utcnow().isoformat(),
+                "grant":      grant,
+            }
+            self._dirty = True
+
+
+# Module-level singletons — shared across all scraper threads
+_cache    = ScraperCache(_CACHE_PATH)
+_AI_SEM   = threading.Semaphore(3)   # max 3 concurrent Azure OpenAI calls
+_HTTP_SEM = threading.Semaphore(10)  # max 10 concurrent outbound HTTP requests
+
 TODAY      = datetime.today()
 THIS_YEAR  = TODAY.year
 NEXT_YEAR  = THIS_YEAR + 1
@@ -48,7 +116,8 @@ HEADERS = {
 MIN_PDF_CHARS   = 300    # PDFs with less text than this are blank forms — skip them
 MAX_PDF_PAGES   = 15     # Only read first N pages of a PDF
 AI_TEXT_LIMIT   = 14000  # Max chars sent to Azure AI per call
-REQUEST_TIMEOUT = 30
+REQUEST_TIMEOUT     = 10   # seconds — detail page fetches
+PDF_REQUEST_TIMEOUT = 30   # seconds — kept higher for large PDF downloads
 REQUEST_DELAY   = 1.2    # Seconds between requests — be polite to servers
 
 
@@ -404,12 +473,14 @@ def extract_amount(text: str) -> Dict:
     return result
 
 
-def safe_get(url: str, retries: int = 3) -> Optional[requests.Response]:
+def safe_get(url: str, retries: int = 2,
+             timeout: int = REQUEST_TIMEOUT) -> Optional[requests.Response]:
     """GET with retries and polite delay."""
     for attempt in range(retries):
         try:
             time.sleep(REQUEST_DELAY)
-            r = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+            with _HTTP_SEM:
+                r = requests.get(url, headers=HEADERS, timeout=timeout)
             if r.status_code == 200:
                 return r
             log.warning(f"  HTTP {r.status_code} for {url}")
@@ -423,7 +494,7 @@ def extract_pdf_text(url: str) -> Optional[str]:
     Download a PDF and extract its text.
     Returns None if the PDF is a blank form or unreadable.
     """
-    r = safe_get(url)
+    r = safe_get(url, timeout=PDF_REQUEST_TIMEOUT)
     if not r:
         return None
     try:
@@ -515,21 +586,27 @@ TEXT TO ANALYZE (source: {source_url}):
 {combined_text[:AI_TEXT_LIMIT]}
 """
 
+    from openai import APITimeoutError
     try:
-        resp = client.chat.completions.create(
-            model=deploy,
-            messages=[
-                {"role": "system",  "content": "Extract structured grant data. Return valid JSON only."},
-                {"role": "user",    "content": prompt},
-            ],
-            temperature=0,
-            max_tokens=2500,
-        )
+        with _AI_SEM:
+            resp = client.chat.completions.create(
+                model=deploy,
+                messages=[
+                    {"role": "system",  "content": "Extract structured grant data. Return valid JSON only."},
+                    {"role": "user",    "content": prompt},
+                ],
+                temperature=0,
+                max_tokens=2500,
+                timeout=30,
+            )
         raw = resp.choices[0].message.content
         # Strip markdown code fences if present
         raw = re.sub(r"^```json\s*", "", raw.strip())
         raw = re.sub(r"```$",        "", raw.strip())
         return json.loads(raw.strip())
+    except APITimeoutError:
+        log.warning(f"Azure AI timeout for {source_url} — skipping")
+        return None
     except Exception as e:
         log.error(f"Azure AI error: {e}")
         return None
@@ -539,18 +616,23 @@ def calculate_quality_score(grant: Dict) -> float:
     """
     Score from 0.0 to 1.0 based on how many key fields are populated.
     Below 0.5 → needs_review = True automatically.
+
+    Notes:
+    - deadline and rolling share one 0.15 slot (either counts).
+    - application_url only scores if explicitly set by the scraper or AI
+      (not defaulted from source_url — that default was removed).
+    - contact_email weight reduced to 0.03 (rarely published on gov sites).
     """
     weights = {
-        "title":                    0.15,
-        "description":              0.10,
-        "deadline":                 0.15,
-        "award_max":                0.10,
-        "eligibility_notes":        0.10,
-        "contact_email":            0.08,
-        "application_url":          0.10,
-        "tags":                     0.07,
-        "areas_of_focus":           0.07,
-        "summary":                  0.08,
+        "title":             0.15,
+        "description":       0.15,
+        "award_max":         0.12,
+        "application_url":   0.12,
+        "eligibility_notes": 0.10,
+        "summary":           0.08,
+        "tags":              0.05,
+        "areas_of_focus":    0.05,
+        "contact_email":     0.03,
     }
     score = 0.0
     for field, weight in weights.items():
@@ -559,6 +641,9 @@ def calculate_quality_score(grant: Dict) -> float:
             score += weight
         elif v:
             score += weight
+    # deadline and rolling share a single 0.15 slot
+    if grant.get("deadline") or grant.get("rolling"):
+        score += 0.15
     return round(score, 2)
 
 
@@ -590,7 +675,9 @@ def clean_and_validate(raw: Dict, state: str, source_url: str) -> Dict:
     grant.setdefault("sdg_alignment",            [])
     grant.setdefault("industry",                 None)
     grant.setdefault("opportunity_url",          source_url)
-    grant.setdefault("application_url",          source_url)
+    # application_url intentionally NOT defaulted to source_url.
+    # Leaving it null lets the enrichment step fill it with a real apply link.
+    # sync_opportunities.py falls back to opportunity_url when still null.
     grant.setdefault("fee_required",             False)
     grant.setdefault("equity_percentage",        False)
     grant.setdefault("safe_note",                False)

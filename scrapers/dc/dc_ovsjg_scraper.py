@@ -1,3 +1,4 @@
+# LEGACY SCRAPER — not connected to the main pipeline. Use scrapers/run_all_scrapers.py instead.
 """
 DC OVSJG scraper — extracts grants from the DC Office of Victim Services and Justice Grants.
 Finds PDF links on the funding opportunities page, downloads each, and parses grant details.

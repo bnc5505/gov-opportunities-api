@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 
 from database import get_db
 from models import User
-from schemas import UserCreate, UserResponse
+from schemas import UserCreate, UserUpdate, UserResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -51,7 +51,7 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, payload: UserCreate, db: Session = Depends(get_db)):
+def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

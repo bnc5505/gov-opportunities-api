@@ -16,6 +16,7 @@ import sys
 import os
 import json
 import re
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from collections import Counter
@@ -40,6 +41,7 @@ PREFIX_STATE_MAP = {
 }
 
 sys.path.insert(0, str(APP_DIR))
+sys.path.insert(0, str(PROJECT_ROOT))
 # CWD must be app/ so SQLite resolves to app/gov_grants.db
 os.chdir(str(APP_DIR))
 
@@ -48,6 +50,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base
 import database  # our existing database.py (engine + SessionLocal)
+from pipeline.agency_logos import get_logo_url
 
 Base = declarative_base()
 
@@ -79,6 +82,46 @@ class ScrapedGrant(Base):
     needs_review       = Column(Boolean, default=True)
     source_file        = Column(String(200))
     loaded_at          = Column(DateTime, default=datetime.utcnow)
+    content_hash             = Column(String(32),   nullable=True)  # MD5 of key fields — detects changes
+    enriched_at              = Column(DateTime,    nullable=True)   # set by enrich_scraped_grants.py
+    contact_phone            = Column(String(100), nullable=True)   # extracted by AI
+    key_requirements         = Column(Text,        nullable=True)   # JSON array, extracted by AI
+    application_url_verified = Column(Boolean,     default=False)   # True when AI found a real apply link
+    combined_text            = Column(Text,        nullable=True)   # raw page + PDF text — used by Pass 1 enrichment
+    logo_url                 = Column(String(500), nullable=True)   # agency favicon / logo
+
+
+def _ensure_columns():
+    """Add new columns to existing scraped_grants table if not already present."""
+    db = database.SessionLocal()
+    try:
+        for col, definition in [
+            ("content_hash",             "TEXT"),
+            ("enriched_at",              "DATETIME"),
+            ("contact_phone",            "VARCHAR(100)"),
+            ("key_requirements",         "TEXT"),
+            ("application_url_verified", "BOOLEAN DEFAULT 0"),
+            ("combined_text",            "TEXT"),
+            ("logo_url",                 "VARCHAR(500)"),
+        ]:
+            try:
+                db.execute(text(f"ALTER TABLE scraped_grants ADD COLUMN {col} {definition}"))
+                db.commit()
+            except Exception:
+                db.rollback()  # column already exists — fine
+    finally:
+        db.close()
+
+
+def compute_content_hash(g: dict) -> str:
+    """MD5 of key extractable fields. Changes when grant content meaningfully changes."""
+    key = "|".join([
+        str(g.get("title") or ""),
+        str(g.get("deadline") or ""),
+        str(g.get("description") or "")[:500],
+        str(g.get("award_max") or ""),
+    ])
+    return hashlib.md5(key.encode()).hexdigest()
 
 
 def discover_source_files() -> list[tuple[Path, str]]:
@@ -305,6 +348,7 @@ def dedup_key(grant: dict) -> str:
 
 def load_grants():
     Base.metadata.create_all(bind=database.engine)
+    _ensure_columns()
 
     all_raw: list[tuple[dict, str]] = []   # (grant_dict, source_filename)
 
@@ -366,7 +410,7 @@ def load_grants():
                 removed_status += 1
                 continue
 
-        # d) Deduplication
+        # d) Deduplication within this run
         key = dedup_key(g)
         if key in seen_keys:
             removed_dupes += 1
@@ -382,22 +426,74 @@ def load_grants():
     print(f"Removed duplicates:     {removed_dupes}")
     print(f"Grants after cleaning:  {len(cleaned)}")
 
-    # 3. Load into database
+    # 3. Build index of existing rows keyed by dedup_key
     db = database.SessionLocal()
-    loaded      = 0
-    load_errors = 0
-
     try:
-        # Wipe any previous load so this script is idempotent
-        existing = db.execute(text("SELECT COUNT(*) FROM scraped_grants")).scalar()
-        if existing:
-            print(f"\nClearing {existing} existing rows from scraped_grants …")
-            db.execute(text("DELETE FROM scraped_grants"))
-            db.commit()
+        existing_rows = db.execute(
+            text("SELECT id, opportunity_url, title, state, content_hash, enriched_at, combined_text, logo_url FROM scraped_grants")
+        ).fetchall()
+    finally:
+        db.close()
 
+    existing_index: dict[str, dict] = {}
+    for r in existing_rows:
+        opp_url = (r[1] or "").strip()
+        title   = (r[2] or "").strip().lower()
+        state   = (r[3] or "").upper()
+        k = opp_url.lower() if opp_url else f"{state}::{title}"
+        existing_index[k] = {
+            "id":            r[0],
+            "hash":          r[4],
+            "enriched_at":   r[5],
+            "combined_text": r[6],
+            "logo_url":      r[7],
+        }
+
+    print(f"Existing rows in DB:    {len(existing_index)}")
+
+    # 4. Upsert — insert new, update changed, skip unchanged
+    inserted        = 0
+    updated         = 0
+    unchanged       = 0
+    backfilled      = 0
+    logo_backfilled = 0
+    load_errors     = 0
+
+    db = database.SessionLocal()
+    try:
         for g, source_file in cleaned:
+            key   = dedup_key(g)
+            chash = compute_content_hash(g)
+            match = existing_index.get(key)
+
             try:
-                row = ScrapedGrant(
+                if match and match["hash"] == chash:
+                    updates = {}
+                    # Backfill combined_text if DB row is missing it (clears enriched_at for re-enrichment)
+                    incoming_ct = (g.get("combined_text") or "").strip()
+                    if incoming_ct and not (match.get("combined_text") or "").strip():
+                        updates["combined_text"] = incoming_ct
+                    # Backfill logo_url if DB row is missing it (no enriched_at reset needed)
+                    if not (match.get("logo_url") or "").strip():
+                        opp_url = g.get("opportunity_url") or g.get("source_url")
+                        updates["logo_url"] = get_logo_url(opp_url)
+
+                    if updates:
+                        set_clause = ", ".join(f"{col} = :{col}" for col in updates)
+                        if "combined_text" in updates:
+                            set_clause += ", enriched_at = NULL"
+                            backfilled += 1
+                        else:
+                            logo_backfilled += 1
+                        db.execute(
+                            text(f"UPDATE scraped_grants SET {set_clause} WHERE id = :id"),
+                            {**updates, "id": match["id"]}
+                        )
+                    else:
+                        unchanged += 1
+                    continue
+
+                params = dict(
                     title              = (g.get("title") or "").strip()[:500],
                     state              = (g.get("state") or "").upper(),
                     status             = (g.get("status") or "").lower(),
@@ -421,11 +517,54 @@ def load_grants():
                     data_quality_score = g.get("data_quality_score"),
                     needs_review       = bool(g.get("needs_review", True)),
                     source_file        = source_file,
-                    loaded_at          = datetime.utcnow(),
+                    content_hash       = chash,
+                    combined_text      = (g.get("combined_text") or "") or None,
+                    logo_url           = get_logo_url(g.get("opportunity_url") or g.get("source_url")),
                 )
-                db.add(row)
-                db.flush()
-                loaded += 1
+
+                if match:
+                    # Content changed — update and reset enriched_at so it re-enriches
+                    db.execute(text("""
+                        UPDATE scraped_grants SET
+                            title=:title, state=:state, status=:status,
+                            deadline=:deadline, rolling=:rolling, is_annual=:is_annual,
+                            award_min=:award_min, award_max=:award_max, total_funding=:total_funding,
+                            award_text=:award_text, description=:description, summary=:summary,
+                            eligibility_notes=:eligibility_notes, contact_email=:contact_email,
+                            contact_name=:contact_name, application_url=:application_url,
+                            opportunity_url=:opportunity_url, tags=:tags,
+                            areas_of_focus=:areas_of_focus, industry=:industry,
+                            data_quality_score=:data_quality_score, needs_review=:needs_review,
+                            source_file=:source_file, content_hash=:content_hash,
+                            combined_text=:combined_text,
+                            logo_url=:logo_url,
+                            loaded_at=:loaded_at, enriched_at=NULL
+                        WHERE id=:id
+                    """), {**params, "loaded_at": datetime.utcnow(), "id": match["id"]})
+                    updated += 1
+                else:
+                    # New grant — insert
+                    db.execute(text("""
+                        INSERT INTO scraped_grants (
+                            title, state, status, deadline, rolling, is_annual,
+                            award_min, award_max, total_funding, award_text,
+                            description, summary, eligibility_notes,
+                            contact_email, contact_name, application_url, opportunity_url,
+                            tags, areas_of_focus, industry, data_quality_score,
+                            needs_review, source_file, content_hash, combined_text,
+                            logo_url, loaded_at, enriched_at
+                        ) VALUES (
+                            :title, :state, :status, :deadline, :rolling, :is_annual,
+                            :award_min, :award_max, :total_funding, :award_text,
+                            :description, :summary, :eligibility_notes,
+                            :contact_email, :contact_name, :application_url, :opportunity_url,
+                            :tags, :areas_of_focus, :industry, :data_quality_score,
+                            :needs_review, :source_file, :content_hash, :combined_text,
+                            :logo_url, :loaded_at, NULL
+                        )
+                    """), {**params, "loaded_at": datetime.utcnow()})
+                    inserted += 1
+
             except Exception as exc:
                 db.rollback()
                 load_errors += 1
@@ -440,7 +579,13 @@ def load_grants():
         db.close()
 
     print(f"\n{'='*60}")
-    print(f"LOAD COMPLETE  — {loaded} grants inserted, {load_errors} skipped")
+    print(f"LOAD COMPLETE")
+    print(f"  Inserted:   {inserted}   (new grants)")
+    print(f"  Updated:    {updated}    (content changed — will re-enrich)")
+    print(f"  Unchanged:  {unchanged}  (skipped — same content, enriched_at preserved)")
+    print(f"  Backfilled: {backfilled} (combined_text added — enriched_at cleared for re-enrichment)")
+    print(f"  Logo backfilled: {logo_backfilled} (logo_url added to previously loaded rows)")
+    print(f"  Errors:     {load_errors}")
     print(f"{'='*60}")
 
     db = database.SessionLocal()

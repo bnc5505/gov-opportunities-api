@@ -11,8 +11,8 @@ Final    — Azure AI pass to fill any gaps, then clean and load to DB
 import os
 import sys
 import json
-import time
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import List, Dict, Optional
 from bs4 import BeautifulSoup
@@ -23,7 +23,7 @@ from pathlib import Path as _Path
 sys.path.insert(0, str(_Path(__file__).resolve().parent.parent / "base"))
 from base_scraper import (
     safe_get, extract_pdf_text, extract_date, extract_amount,
-    ai_extract, clean_and_validate, load_to_db, log,
+    ai_extract, clean_and_validate, load_to_db, log, _cache,
 )
 
 STATE       = "PA"
@@ -111,6 +111,12 @@ def scrape_grant_page(link_info: Dict) -> Optional[Dict]:
         log.warning(f"  Could not fetch page: {url}")
         return None
 
+    chash = _cache.content_hash(r.content)
+    cached = _cache.get_if_fresh(url, chash)
+    if cached:
+        log.info(f"    [cache hit] {name[:60]}")
+        return {"_from_cache": True, "_cached_grant": cached, "_content_hash": chash, "url": url}
+
     soup      = BeautifulSoup(r.content, "html.parser")
     page_text = soup.get_text(separator="\n", strip=True)
 
@@ -164,32 +170,28 @@ def process_pdfs(page_data: Dict) -> Dict:
     Extracts text from each and runs date + amount extraction.
     Returns enriched page_data with pdf_texts added.
     """
-    pdf_extractions = []
+    pdf_links = page_data.get("pdf_links", [])
+    if not pdf_links:
+        page_data["pdf_extractions"] = []
+        return page_data
 
-    for pdf_info in page_data.get("pdf_links", []):
-        log.info(f"  LAYER 3 — Processing PDF: {pdf_info['label'][:60]}")
-
+    def _fetch_one(pdf_info):
         text = extract_pdf_text(pdf_info["url"])
         if not text:
-            continue
-
+            return None
         pdf_date   = extract_date(text)
         pdf_amount = extract_amount(text)
-
-        pdf_extractions.append({
+        return {
             "url":    pdf_info["url"],
             "label":  pdf_info["label"],
             "text":   text,
             "date":   pdf_date,
             "amount": pdf_amount,
-        })
-        log.info(
-            f"    Extracted {len(text)} chars | "
-            f"date: {pdf_date.get('deadline')} | "
-            f"amount: {pdf_amount.get('award_max')}"
-        )
+        }
 
-    page_data["pdf_extractions"] = pdf_extractions
+    with ThreadPoolExecutor(max_workers=3) as exe:
+        results = list(exe.map(_fetch_one, pdf_links))
+    page_data["pdf_extractions"] = [r for r in results if r]
     return page_data
 
 
@@ -335,29 +337,36 @@ def run(save_json: bool = True, load_db: bool = False, db_session=None) -> List[
 
     all_grants = []
 
-    for i, link in enumerate(links, 1):
-        log.info(f"\n{'─'*60}")
-        log.info(f"Processing {i}/{len(links)}: {link['name'][:60]}")
-        log.info(f"{'─'*60}")
-
+    def _process_one(link):
         page_data = scrape_grant_page(link)
         if not page_data:
-            continue
-
+            return None
+        if page_data.get("_from_cache"):
+            return page_data["_cached_grant"]
         page_data = process_pdfs(page_data)
         merged = merge_extractions(page_data)
         final = final_extraction(merged)
         clean = clean_and_validate(final, STATE, link["url"])
+        _cache.set(link["url"], page_data["_content_hash"], clean)
+        return clean
 
-        log.info(
-            f"  Result → title: {clean['title'][:50]} | "
-            f"deadline: {clean.get('deadline')} | "
-            f"award_max: {clean.get('award_max')} | "
-            f"quality: {clean.get('data_quality_score')} | "
-            f"status: {clean.get('status')}"
-        )
+    with ThreadPoolExecutor(max_workers=5) as exe:
+        futures = {exe.submit(_process_one, lnk): lnk for lnk in links}
+        for i, fut in enumerate(as_completed(futures), 1):
+            lnk = futures[fut]
+            try:
+                clean = fut.result()
+                if clean:
+                    log.info(
+                        f"  [{i}/{len(links)}] {lnk['name'][:50]}  "
+                        f"deadline={clean.get('deadline')}  "
+                        f"score={clean.get('data_quality_score')}"
+                    )
+                    all_grants.append(clean)
+            except Exception as e:
+                log.error(f"  Error processing {lnk.get('name', lnk.get('url', '?'))[:60]}: {e}")
 
-        all_grants.append(clean)
+    _cache.flush()
 
     if save_json:
         os.makedirs(_DATA_DIR, exist_ok=True)

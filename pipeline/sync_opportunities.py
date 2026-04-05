@@ -47,6 +47,25 @@ load_dotenv(PROJECT_ROOT / ".env")
 import database
 from sqlalchemy import text
 
+sys.path.insert(0, str(PROJECT_ROOT))
+from pipeline.agency_logos import get_logo_url as _get_logo_url
+
+
+def _ensure_opportunities_columns():
+    """Add new columns to the opportunities table if not already present.
+    Each ALTER TABLE runs in its own connection so a 'column already exists'
+    error never poisons any other transaction.
+    """
+    for col, defn in [
+        ("logo_url", "VARCHAR(500)"),
+    ]:
+        with database.engine.connect() as conn:
+            try:
+                conn.execute(text(f"ALTER TABLE opportunities ADD COLUMN {col} {defn}"))
+                conn.commit()
+            except Exception:
+                conn.rollback()  # column already exists — fine
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
@@ -168,14 +187,19 @@ def parse_json_field(value):
 
 
 def is_live_ready(row, min_score: float) -> bool:
-    if not row["title"] or not row["application_url"]:
+    # application_url may be null (AI found no direct link); opportunity_url is the fallback.
+    # A grant is still live-ready as long as it has at least one linkable URL.
+    if not row["title"] or (not row["application_url"] and not row["opportunity_url"]):
         return False
     score = row["data_quality_score"] or 0
     if score < min_score:
         return False
-    if (row["status"] or "").lower() not in LIVE_STATUSES:
+    # Rolling grants are always accepting applications — status="unverified" doesn't block them.
+    # Non-rolling grants must have an explicit active/rolling/expiring_soon status.
+    rolling = bool(row["rolling"])
+    if not rolling and (row["status"] or "").lower() not in LIVE_STATUSES:
         return False
-    if not row["deadline"] and not row["rolling"]:
+    if not row["deadline"] and not rolling:
         return False
     # high-quality grants go live as-is
     # lower-scored grants need a significant award amount to be worth showing
@@ -228,8 +252,12 @@ def get_or_create_source(conn, source_file: str) -> int:
 def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
     """Returns (action, opportunity_id, queued)."""
     state_code = (row["state"] or "").upper()
-    app_url    = (row["application_url"] or "").strip()
     opp_url    = (row["opportunity_url"] or "").strip()
+    app_url    = (row["application_url"] or "").strip()
+    # If AI found no verified apply link, fall back to the info page URL.
+    # The listing UI can still link users somewhere meaningful.
+    if not app_url:
+        app_url = opp_url
     key        = make_key(state_code, opp_url, app_url)
 
     state_id   = get_state_id(conn, state_code)
@@ -256,7 +284,7 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
         source_id  = source_id,
         state_id   = state_id,
         elig_org   = 1,
-        elig_ind   = 0,
+        elig_ind   = 1 if row.get("eligibility_individual") else 0,
         elig_desc  = row["eligibility_notes"],
         award_min  = row["award_min"],
         award_max  = row["award_max"],
@@ -274,6 +302,7 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
         score      = row["data_quality_score"],
         needs_rev  = 1 if row["needs_review"] else 0,
         synced_at  = datetime.utcnow().isoformat(),
+        logo_url   = row.get("logo_url") or _get_logo_url(opp_url or app_url),
     )
 
     if existing:
@@ -303,6 +332,7 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
                 status                  = :status,
                 data_quality_score      = :score,
                 needs_review            = :needs_rev,
+                logo_url                = :logo_url,
                 last_synced_at          = :synced_at,
                 updated_at              = :synced_at
             WHERE opportunity_key = :key
@@ -321,6 +351,7 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
                 contact_name, contact_email,
                 tags, opportunity_gap_resources, industry,
                 status, data_quality_score, needs_review,
+                logo_url,
                 last_synced_at, created_at, updated_at
             ) VALUES (
                 :key, :title, :desc, :summary,
@@ -332,6 +363,7 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
                 :c_name, :c_email,
                 :tags, :aof, :industry,
                 :status, :score, :needs_rev,
+                :logo_url,
                 :synced_at, :synced_at, :synced_at
             )
         """), params)
@@ -366,44 +398,49 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
 
 
 def main(dry_run=False, min_score=MIN_SCORE):
-    db = database.SessionLocal()
-    conn = db.connection()
+    _ensure_opportunities_columns()
 
+    # Read all scraped grants
+    read_db = database.SessionLocal()
     try:
-        all_rows = conn.execute(text("SELECT * FROM scraped_grants")).mappings().fetchall()
-        live     = [r for r in all_rows if is_live_ready(r, min_score)]
-        blocked  = len(all_rows) - len(live)
-
-        log.info(f"Total scraped_grants:  {len(all_rows)}")
-        log.info(f"Live-ready to sync:    {len(live)}")
-        log.info(f"Blocked (no deadline): {blocked}")
-        if dry_run:
-            log.info("DRY-RUN — no DB writes")
-
-        stats = {"inserted": 0, "updated": 0, "queued": 0, "errors": 0}
-
-        for row in live:
-            try:
-                action, opp_id, queued = upsert_opportunity(conn, row, dry_run)
-                key = action.replace("would_", "")
-                stats[key] = stats.get(key, 0) + 1
-                if queued:
-                    stats["queued"] += 1
-            except Exception as exc:
-                stats["errors"] += 1
-                log.error(f"  Error on '{(row['title'] or '')[:50]}': {exc}")
-
-        if not dry_run:
-            db.commit()
-        else:
-            db.rollback()
-
-    except Exception as exc:
-        db.rollback()
-        log.error(f"Fatal: {exc}")
-        raise
+        all_rows = read_db.execute(text("SELECT * FROM scraped_grants")).mappings().fetchall()
+        all_rows = list(all_rows)
     finally:
-        db.close()
+        read_db.close()
+
+    live    = [r for r in all_rows if is_live_ready(r, min_score)]
+    blocked = len(all_rows) - len(live)
+
+    log.info(f"Total scraped_grants:  {len(all_rows)}")
+    log.info(f"Live-ready to sync:    {len(live)}")
+    log.info(f"Blocked:               {blocked}")
+    if dry_run:
+        log.info("DRY-RUN — no DB writes")
+
+    stats = {"inserted": 0, "updated": 0, "queued": 0, "errors": 0}
+
+    for row in live:
+        # Each upsert gets its own session — one failing row never kills the batch
+        row_db = database.SessionLocal()
+        try:
+            action, opp_id, queued = upsert_opportunity(row_db.connection(), row, dry_run)
+            key = action.replace("would_", "")
+            stats[key] = stats.get(key, 0) + 1
+            if queued:
+                stats["queued"] += 1
+            if not dry_run:
+                row_db.commit()
+            else:
+                row_db.rollback()
+        except Exception as exc:
+            stats["errors"] += 1
+            log.error(f"  Error on '{(row['title'] or '')[:50]}': {exc}")
+            try:
+                row_db.rollback()
+            except Exception:
+                pass
+        finally:
+            row_db.close()
 
     print(f"\n{'='*60}")
     print(f"SYNC COMPLETE{'  [DRY-RUN]' if dry_run else ''}")

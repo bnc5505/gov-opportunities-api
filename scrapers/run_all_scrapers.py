@@ -17,6 +17,7 @@ import argparse
 import logging
 from datetime import datetime
 from typing import List, Dict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 THIS_DIR     = os.path.dirname(os.path.abspath(__file__))   # scrapers/
 PROJECT_ROOT = os.path.dirname(THIS_DIR)                    # project root
@@ -274,7 +275,7 @@ ALL_SOURCES: List[Dict] = [
 ]
 
 
-def run_scraper(source: Dict) -> Dict:
+def run_scraper(source: Dict, no_cache: bool = False) -> Dict:
     """Run one scraper and return stats."""
     import importlib
 
@@ -285,14 +286,15 @@ def run_scraper(source: Dict) -> Dict:
     try:
         module = importlib.import_module(source["module"])
 
-        # Custom scrapers have config baked in; template scrapers receive a config dict.
         if source.get("type") == "custom":
+            # Custom scrapers don't accept no_cache yet — run as-is
             grants = module.run(save_json=True)
         else:
             grants = module.run(
                 config=source["config"],
                 save_json=True,
                 load_db=False,
+                no_cache=no_cache,
             )
 
         active  = [g for g in grants if g.get("status") == "active"]
@@ -339,24 +341,38 @@ def run_scraper(source: Dict) -> Dict:
         }
 
 
-def run_all(states: List[str] = None) -> List[Dict]:
-    """Run all scrapers (optionally filtered by state). Returns list of result dicts."""
+def run_all(states: List[str] = None, no_cache: bool = False) -> List[Dict]:
+    """Run all scrapers concurrently. Each state's sources run in parallel.
+    Returns list of result dicts."""
     start   = datetime.now()
     sources = ALL_SOURCES
 
     if states:
-        upper = [s.upper() for s in states]
+        upper   = [s.upper() for s in states]
         sources = [s for s in ALL_SOURCES if s["state"] in upper]
 
-    log.info(f"Running {len(sources)} scrapers for states: "
-             f"{sorted(set(s['state'] for s in sources))}")
+    unique_states = sorted(set(s["state"] for s in sources))
+    log.info(f"Running {len(sources)} scrapers across {unique_states}"
+             f"{'  [--no-cache: full re-scrape]' if no_cache else '  [incremental — cache enabled]'}")
 
-    results = []
-    for source in sources:
-        result = run_scraper(source)
-        results.append(result)
+    # Run all sources concurrently — each writes its own output file, no conflicts.
+    # Cap at 8 workers to avoid overwhelming target sites.
+    max_workers = min(8, len(sources))
+    results     = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        future_to_source = {
+            pool.submit(run_scraper, source, no_cache): source
+            for source in sources
+        }
+        for future in as_completed(future_to_source):
+            results.append(future.result())
 
     duration = (datetime.now() - start).total_seconds()
+
+    # Sort results to match original source order for display
+    source_order = {s["name"]: i for i, s in enumerate(sources)}
+    results.sort(key=lambda r: source_order.get(r["source"], 999))
 
     print(f"\n{'='*70}")
     print(f"ALL SCRAPERS COMPLETE — {duration:.0f}s ({duration/60:.1f} min)")
@@ -383,6 +399,7 @@ def run_all(states: List[str] = None) -> List[Dict]:
     summary = {
         "run_at":       datetime.utcnow().isoformat(),
         "duration_sec": duration,
+        "no_cache":     no_cache,
         "total_grants": total_grants,
         "sources":      results,
     }
@@ -400,5 +417,9 @@ if __name__ == "__main__":
         "--state", nargs="+",
         help="Filter to specific state codes (e.g. NY MD DC PA)"
     )
+    parser.add_argument(
+        "--no-cache", action="store_true",
+        help="Force full re-scrape, ignoring any cached results"
+    )
     args = parser.parse_args()
-    run_all(states=args.state)
+    run_all(states=args.state, no_cache=args.no_cache)

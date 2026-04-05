@@ -188,6 +188,7 @@ def _row(**kwargs):
     defaults = {
         "title": "Valid Grant",
         "application_url": "https://example.gov/apply",
+        "opportunity_url": "https://example.gov/grant-info",
         "data_quality_score": 0.75,
         "status": "active",
         "deadline": "06/30/2026",
@@ -211,8 +212,12 @@ def test_is_live_ready_no_title():
 
 
 def test_is_live_ready_no_application_url():
-    assert not is_live_ready(_row(application_url=""), min_score=0.5)
-    assert not is_live_ready(_row(application_url=None), min_score=0.5)
+    # application_url absent but opportunity_url present → still live-ready (fallback applies)
+    assert is_live_ready(_row(application_url=""), min_score=0.5)
+    assert is_live_ready(_row(application_url=None), min_score=0.5)
+    # both absent → blocked
+    assert not is_live_ready(_row(application_url=None, opportunity_url=None), min_score=0.5)
+    assert not is_live_ready(_row(application_url="",   opportunity_url=""),   min_score=0.5)
 
 
 def test_is_live_ready_low_score_low_award():

@@ -1,0 +1,17 @@
+# Azure Functions runtime
+azure-functions>=1.17.0
+
+# Database (matches existing project dependency)
+psycopg2-binary>=2.9.9
+
+# HTTP requests for scrapers
+requests>=2.31.0
+
+# HTML parsing (matches existing project)
+beautifulsoup4>=4.12.0
+
+# Azure OpenAI (matches existing AI Foundry integration)
+openai>=1.12.0
+
+# Utilities
+python-dotenv>=1.0.0

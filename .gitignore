@@ -1,72 +1,60 @@
-# Environment variables (NEVER commit these!)
-.env
-.env.*
-!.env.example
-
-# Large data exports and binary docs
-*.xml
-*.docx
-*.xlsx
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-gov_grants.db
-
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+*.pyo
 *.egg-info/
-.installed.cfg
-*.egg
+.eggs/
+dist/
+build/
 
-# Virtual Environment
+# Virtual environment
 .venv/
 venv/
 ENV/
 env/
 
-# VS Code
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE / OS
 .vscode/
-*.code-workspace
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Azure
-.azure/
-
-# IDE
 .idea/
 *.swp
 *.swo
-*~
-
-# Logs
-*.log
+.DS_Store
+Thumbs.db
 
 # Testing
 .pytest_cache/
-.coverage
 htmlcov/
+.coverage
+coverage.xml
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# Azure Functions local config
+scheduler/local.settings.json
+
+# Scraper outputs (regenerated on every run)
+data/**/*_raw.json
+data/scrape_cache.json
+scraper_run_summary.json
+
+# Codebase dumps / exports
+codebase_dump*.txt
+codebase_dump*.zip
+full_codebase.txt
+
+# Large local data files
+app/GrantsDBExtract*.xml
+*.docx
+*.xlsx
+
+# Azure
+.azure/
+.funcignore

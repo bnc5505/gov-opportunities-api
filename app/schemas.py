@@ -232,6 +232,7 @@ class OpportunityListItem(BaseModel):
     status: str
     eligibility_individual: bool
     eligibility_organization: bool
+    data_quality_score: Optional[float] = None
     award_min: Optional[float] = None
     award_max: Optional[float] = None
     deadline: Optional[datetime] = None

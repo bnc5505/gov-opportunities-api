@@ -29,8 +29,8 @@ import os
 import re
 import sys
 import json
-import time
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -50,7 +50,7 @@ sys.path.insert(0, str(APP_DIR))
 
 from base_scraper import (
     safe_get, extract_pdf_text, extract_date, extract_amount,
-    ai_extract, clean_and_validate, log,
+    ai_extract, clean_and_validate, log, _cache,
 )
 
 STATE       = "PA"
@@ -314,6 +314,12 @@ def scrape_detail_page(grant_info: Dict) -> Optional[Dict]:
     if not r:
         return None
 
+    chash  = _cache.content_hash(r.content)
+    cached = _cache.get_if_fresh(url, chash)
+    if cached:
+        log.info(f"    [cache hit] {url[:80]}")
+        return {"_from_cache": True, "_cached_grant": cached, "_content_hash": chash, "source_url": url}
+
     soup      = BeautifulSoup(r.content, "html.parser")
     page_text = soup.get_text(separator="\n", strip=True)
 
@@ -324,6 +330,7 @@ def scrape_detail_page(grant_info: Dict) -> Optional[Dict]:
         "contact_text":    None,
         "pdf_links":       [],
         "resource_links":  [],
+        "_content_hash":   chash,
     }
 
     # ── Application URL ────────────────────────────────────────────────────
@@ -391,20 +398,26 @@ def scrape_detail_page(grant_info: Dict) -> Optional[Dict]:
 
 def process_pdfs(page: Dict) -> Dict:
     """Download and extract text from PDF attachments (max 3 per grant)."""
-    pdf_extractions = []
-    for pdf in page.get("pdf_links", [])[:3]:
-        log.info(f"    PDF: {pdf['label'][:60]}")
+    pdf_links = page.get("pdf_links", [])[:3]
+    if not pdf_links:
+        page["pdf_extractions"] = []
+        return page
+
+    def _fetch_one(pdf):
         text = extract_pdf_text(pdf["url"])
         if not text:
-            continue
-        pdf_extractions.append({
+            return None
+        return {
             "url":    pdf["url"],
             "label":  pdf["label"],
             "text":   text,
             "date":   extract_date(text),
             "amount": extract_amount(text),
-        })
-    page["pdf_extractions"] = pdf_extractions
+        }
+
+    with ThreadPoolExecutor(max_workers=3) as exe:
+        results = list(exe.map(_fetch_one, pdf_links))
+    page["pdf_extractions"] = [r for r in results if r]
     return page
 
 
@@ -495,6 +508,7 @@ def merge_and_enrich(grant_info: Dict, page: Dict) -> Dict:
 
     if isinstance(ai, dict):
         final = {**ai}
+        final["combined_text"] = merged.get("combined_text", "")
 
         # Coveo-derived fields take priority over AI guesses
         for key in ("deadline", "award_max", "award_min", "is_annual"):
@@ -555,39 +569,36 @@ def run(save_json: bool = True) -> List[Dict]:
 
     grants: List[Dict] = []
 
-    for i, grant_info in enumerate(grant_infos, 1):
-        log.info(f"\n{'─' * 60}")
-        log.info(f"{i}/{len(grant_infos)}: {grant_info.get('title', grant_info['url'])[:70]}")
-        log.info(f"  Coveo: deadline={grant_info.get('deadline')}  "
-                 f"award_max={grant_info.get('award_max')}  "
-                 f"agency={grant_info.get('agency', '')[:40]}")
-        try:
-            # Layer 2 — scrape detail page (PDFs, contact, app URL)
-            page = scrape_detail_page(grant_info)
-            if not page:
-                log.warning("  Could not fetch detail page — using Coveo data only")
-                page = {"page_text": "", "pdf_links": [], "pdf_extractions": [],
-                        "application_url": None, "contact_email": None}
+    def _process_one(grant_info):
+        page = scrape_detail_page(grant_info)
+        if not page:
+            page = {"page_text": "", "pdf_links": [], "pdf_extractions": [],
+                    "application_url": None, "contact_email": None}
+        if page.get("_from_cache"):
+            return page["_cached_grant"]
+        page    = process_pdfs(page)
+        final   = merge_and_enrich(grant_info, page)
+        cleaned = clean_and_validate(final, STATE, grant_info["url"])
+        _cache.set(grant_info["url"], page.get("_content_hash", ""), cleaned)
+        return cleaned
 
-            # Layer 3 — extract PDFs
-            page = process_pdfs(page)
+    with ThreadPoolExecutor(max_workers=5) as exe:
+        futures = {exe.submit(_process_one, gi): gi for gi in grant_infos}
+        for i, fut in enumerate(as_completed(futures), 1):
+            gi = futures[fut]
+            try:
+                cleaned = fut.result()
+                if cleaned:
+                    log.info(
+                        f"  [{i}/{len(grant_infos)}] {gi.get('title', gi['url'])[:50]}  "
+                        f"deadline={cleaned.get('deadline')}  "
+                        f"score={cleaned.get('data_quality_score')}"
+                    )
+                    grants.append(cleaned)
+            except Exception as e:
+                log.error(f"  Error for {gi.get('url', '?')}: {e}", exc_info=False)
 
-            # Layer 4 — merge + AI enrichment
-            final   = merge_and_enrich(grant_info, page)
-            cleaned = clean_and_validate(final, STATE, grant_info["url"])
-
-            log.info(
-                f"  FINAL: deadline={cleaned.get('deadline')}  "
-                f"award_max={cleaned.get('award_max')}  "
-                f"score={cleaned.get('data_quality_score')}  "
-                f"status={cleaned.get('status')}"
-            )
-            grants.append(cleaned)
-
-        except Exception as e:
-            log.error(f"  Error for {grant_info.get('url', '?')}: {e}", exc_info=False)
-
-        time.sleep(0.6)   # polite crawl delay
+    _cache.flush()
 
     # Save JSON
     if save_json:

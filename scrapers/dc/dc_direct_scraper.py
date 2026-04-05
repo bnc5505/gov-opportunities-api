@@ -1,3 +1,4 @@
+# LEGACY SCRAPER — not connected to the main pipeline. Use scrapers/run_all_scrapers.py instead.
 # DC Direct Scraper
 #
 # Scrapes grant listings directly from two DC government pages that allow
@@ -25,7 +26,7 @@ sys.path.insert(0, str(_Path(__file__).resolve().parent.parent.parent / "app"))
 
 from models import (
     Opportunity, Agency, Source, State, ScrapeLog, ReviewQueue,
-    OpportunityType, OpportunityStatus, OpportunityCategory,
+    OpportunityType, OpportunityStatus, Category,
 )
 from database import SessionLocal, engine
 
@@ -330,7 +331,7 @@ def save_grant(db, data: dict) -> bool:
         sponsor_name=data.get("sponsor_name"),
         sponsor_website=data.get("sponsor_website"),
         opportunity_type=OpportunityType.GRANT,
-        category=OpportunityCategory.GOVERNMENT,
+        category=Category.GOVERNMENT,
         status=OpportunityStatus.UNVERIFIED,
         needs_review=True,
         extraction_confidence=0.5,

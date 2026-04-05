@@ -5,17 +5,20 @@ The scraping logic stays the same; only the config values change.
 
 import os
 import sys
+import re
 import json
+import hashlib
 import logging
 from datetime import datetime
 from typing import List, Dict, Optional
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from base_scraper import (
     safe_get, extract_pdf_text, extract_date, extract_amount,
-    ai_extract, clean_and_validate, load_to_db, log,
+    ai_extract, clean_and_validate, load_to_db, log, _cache,
 )
 
 # CONFIG — change this section for each new state/source
@@ -154,8 +157,11 @@ def scrape_listing(config: Dict) -> List[Dict]:
     return links
 
 
-def scrape_page(link_info: Dict, config: Dict) -> Optional[Dict]:
-    """Layer 2 — Visit one grant page, extract HTML text and PDF links."""
+def scrape_page(link_info: Dict, config: Dict, no_cache: bool = False) -> Optional[Dict]:
+    """Layer 2 — Visit one grant page, extract HTML text and PDF links.
+    Returns a dict with _content_hash so callers can update the cache.
+    Returns {"_from_cache": True, "_cached_grant": <grant>} on cache hit.
+    """
     url  = link_info["url"]
     name = link_info["name"]
 
@@ -164,6 +170,15 @@ def scrape_page(link_info: Dict, config: Dict) -> Optional[Dict]:
     r = safe_get(url)
     if not r:
         return None
+
+    content_hash = _cache.content_hash(r.content)
+
+    # Cache hit — skip PDF download + AI entirely
+    if not no_cache:
+        cached = _cache.get_if_fresh(url, content_hash)
+        if cached:
+            log.info(f"  CACHE HIT (unchanged): {name[:60]}")
+            return {"_from_cache": True, "_cached_grant": cached}
 
     soup      = BeautifulSoup(r.content, "html.parser")
     page_text = soup.get_text(separator="\n", strip=True)
@@ -181,31 +196,40 @@ def scrape_page(link_info: Dict, config: Dict) -> Optional[Dict]:
                 log.info(f"  PDF: {a.get_text(strip=True)[:60]}")
 
     return {
-        "url":         url,
-        "name":        name,
-        "page_text":   page_text,
-        "pdf_links":   pdf_links,
-        "html_date":   extract_date(page_text),
-        "html_amount": extract_amount(page_text),
+        "url":           url,
+        "name":          name,
+        "page_text":     page_text,
+        "pdf_links":     pdf_links,
+        "html_date":     extract_date(page_text),
+        "html_amount":   extract_amount(page_text),
+        "_content_hash": content_hash,
     }
 
 
 def process_pdfs(page_data: Dict) -> Dict:
-    """Layer 3 — Download and extract text from every PDF on the page."""
-    pdf_extractions = []
-    for pdf in page_data.get("pdf_links", []):
+    """Layer 3 — Download and extract text from every PDF on the page (concurrent)."""
+    pdf_links = page_data.get("pdf_links", [])
+    if not pdf_links:
+        page_data["pdf_extractions"] = []
+        return page_data
+
+    def _download_one(pdf: Dict) -> Optional[Dict]:
         log.info(f"  PDF: {pdf['label'][:50]}")
         text = extract_pdf_text(pdf["url"])
         if not text:
-            continue
-        pdf_extractions.append({
+            return None
+        return {
             "url":    pdf["url"],
             "label":  pdf["label"],
             "text":   text,
             "date":   extract_date(text),
             "amount": extract_amount(text),
-        })
-    page_data["pdf_extractions"] = pdf_extractions
+        }
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        results = list(pool.map(_download_one, pdf_links))
+
+    page_data["pdf_extractions"] = [r for r in results if r]
     return page_data
 
 
@@ -283,6 +307,7 @@ def final_ai_pass(merged: Dict, state: str) -> Dict:
         return merged
 
     final = {**ai}
+    final["combined_text"] = merged.get("combined_text", "")
 
     if merged.get("deadline") and not ai.get("deadline"):
         final["deadline"] = merged["deadline"]
@@ -302,36 +327,59 @@ def final_ai_pass(merged: Dict, state: str) -> Dict:
 
 
 def run(config: Dict = CONFIG, save_json: bool = True,
-        load_db: bool = False, db_session=None) -> List[Dict]:
-    """Full pipeline for one state source."""
+        load_db: bool = False, db_session=None,
+        no_cache: bool = False) -> List[Dict]:
+    """Full pipeline for one state source. Processes detail pages concurrently."""
     log.info("=" * 70)
     log.info(f"SCRAPER STARTING — {config['state']} | {config['listing_url']}")
-    log.info("=" * 70)
+    log.info(f"=" * 70)
 
-    start  = datetime.now()
-    links  = scrape_listing(config)
+    start = datetime.now()
+    links = scrape_listing(config)
+
+    def _process_one(link: Dict) -> Optional[Dict]:
+        try:
+            page = scrape_page(link, config, no_cache=no_cache)
+            if not page:
+                return None
+
+            # Cache hit — return immediately, skip expensive steps
+            if page.get("_from_cache"):
+                return page["_cached_grant"]
+
+            content_hash = page.pop("_content_hash", None)
+
+            page    = process_pdfs(page)
+            merged  = merge(page)
+            final   = final_ai_pass(merged, config["state"])
+            cleaned = clean_and_validate(final, config["state"], link["url"])
+
+            log.info(
+                f"  deadline: {cleaned.get('deadline')} | "
+                f"award_max: {cleaned.get('award_max')} | "
+                f"quality: {cleaned.get('data_quality_score')} | "
+                f"status: {cleaned.get('status')}"
+            )
+
+            if content_hash:
+                _cache.set(link["url"], content_hash, cleaned)
+
+            return cleaned
+        except Exception as exc:
+            log.error(f"  Error processing {link.get('url', '?')}: {exc}")
+            return None
+
+    # Process all detail pages concurrently (5 workers)
     grants = []
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        futures = {pool.submit(_process_one, link): link for link in links}
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                grants.append(result)
 
-    for i, link in enumerate(links, 1):
-        log.info(f"\n{'─'*60}")
-        log.info(f"{i}/{len(links)}: {link['name'][:60]}")
-
-        page = scrape_page(link, config)
-        if not page:
-            continue
-
-        page    = process_pdfs(page)
-        merged  = merge(page)
-        final   = final_ai_pass(merged, config["state"])
-        cleaned = clean_and_validate(final, config["state"], link["url"])
-
-        log.info(
-            f"  deadline: {cleaned.get('deadline')} | "
-            f"award_max: {cleaned.get('award_max')} | "
-            f"quality: {cleaned.get('data_quality_score')} | "
-            f"status: {cleaned.get('status')}"
-        )
-        grants.append(cleaned)
+    # Persist cache to disk after each source completes
+    _cache.flush()
 
     if save_json:
         out = {
