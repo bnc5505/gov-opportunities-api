@@ -26,6 +26,11 @@ LOGO_REGISTRY: dict = {
 
     # ── New York ──────────────────────────────────────────────────────────────
 
+    "grantsgateway.ny.gov": {
+        "agency_name": "NY Grants Gateway (SFS)",
+        "logo_url":    "https://www.ny.gov/sites/default/files/styles/crop_freeform/public/2019-07/nygov-logo.png",
+        "state":       "NY",
+    },
     "esd.ny.gov": {
         "agency_name": "Empire State Development",
         "logo_url":    "https://esd.ny.gov/themes/custom/nyesd/src/images/favicon.ico",
@@ -79,6 +84,11 @@ LOGO_REGISTRY: dict = {
 
     # ── Maryland ──────────────────────────────────────────────────────────────
 
+    "grants.maryland.gov": {
+        "agency_name": "Maryland Governor's Grants Office",
+        "logo_url":    "https://egov.maryland.gov/favicon.ico",
+        "state":       "MD",
+    },
     "mdot.maryland.gov": {
         "agency_name": "MD Department of Transportation",
         "logo_url":    "https://egov.maryland.gov/favicon.ico",  # mdot blocks direct access; use MD state egov favicon
@@ -122,6 +132,26 @@ LOGO_REGISTRY: dict = {
 
     # ── Washington D.C. ───────────────────────────────────────────────────────
 
+    "dc.gov": {
+        "agency_name": "DC Government",
+        "logo_url":    "https://dc.gov/favicon.ico",
+        "state":       "DC",
+    },
+    "planning.dc.gov": {
+        "agency_name": "DC Office of Planning",
+        "logo_url":    "https://dc.gov/favicon.ico",
+        "state":       "DC",
+    },
+    "communityaffairs.dc.gov": {
+        "agency_name": "DC Mayor's Office of Community Affairs",
+        "logo_url":    "https://dc.gov/favicon.ico",
+        "state":       "DC",
+    },
+    "ddc.dc.gov": {
+        "agency_name": "DC Developmental Disabilities Council",
+        "logo_url":    "https://dc.gov/favicon.ico",
+        "state":       "DC",
+    },
     "dmped.dc.gov": {
         "agency_name": "DC DMPED – Economic Development",
         "logo_url":    "https://dmped.dc.gov/favicon.ico",

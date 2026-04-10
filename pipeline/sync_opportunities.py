@@ -32,7 +32,7 @@ import json
 import hashlib
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent   # pipeline/../ = project root
@@ -65,6 +65,25 @@ def _ensure_opportunities_columns():
                 conn.commit()
             except Exception:
                 conn.rollback()  # column already exists — fine
+
+def expire_stale_grants() -> int:
+    """
+    Update opportunities to status='expired' where deadline has passed and rolling is not true.
+    Uses today's local date for comparison. Returns the count of rows updated.
+    """
+    today = date.today().isoformat()
+    with database.engine.connect() as conn:
+        result = conn.execute(text("""
+            UPDATE opportunities
+            SET status = 'expired', updated_at = :now
+            WHERE status = 'active'
+              AND deadline IS NOT NULL
+              AND deadline < :today
+              AND (rolling IS NULL OR rolling = 0)
+        """), {"today": today, "now": datetime.utcnow().isoformat()})
+        conn.commit()
+        return result.rowcount
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -99,17 +118,19 @@ SOURCE_NAME_MAP = {
     "pa_pema_grants_raw.json":        "PEMA Emergency Management Grants",
     "pa_agriculture_grants_raw.json": "PA Dept of Agriculture Grants",
     # DC
+    "dc_central_grants_raw.json":  "DC Central Grants Hub",
     "dc_ovsjg_grants_raw.json":    "DC OVSJG Grants",
     "dc_dslbd_grants_raw.json":    "DC Small Business Grants",
     # Maryland
+    "md_grants_portal_raw.json":   "Maryland Governor's Grants Portal",
     "md_commerce_grants_raw.json": "Maryland Commerce Funding",
     "md_bworks_grants_raw.json":   "Maryland Business Works",
     "md_dhcd_grants_raw.json":     "Maryland DHCD Housing",
-    "md_grants_portal_raw.json":   "Maryland Grants Portal",
+    "md_grants_portal_raw.json":   "Maryland Governor's Grants Portal",
     "md_msde_grants_raw.json":     "MD State Dept of Education Grants",
     # New York
     "ny_esd_grants_raw.json":      "NY ESD Grants",
-    "ny_grants_gateway_raw.json":  "NY Grants Gateway",
+    "ny_grants_gateway_raw.json":  "NY Grants Gateway (SFS Browse Portal)",
     "ny_nyserda_grants_raw.json":  "NY NYSERDA",
     "ny_gov_grants_raw.json":      "NY Gov Grants",
     "ny_empire_grants_raw.json":   "NY Empire State Development",
@@ -130,17 +151,18 @@ SOURCE_URLS = {
     "pa_pema_grants_raw.json":        "https://www.pema.pa.gov/Grants/Pages/default.aspx",
     "pa_agriculture_grants_raw.json": "https://www.agriculture.pa.gov/Grants/Pages/default.aspx",
     # DC
+    "dc_central_grants_raw.json":  "https://dc.gov/page/grants-and-funding",
     "dc_ovsjg_grants_raw.json":    "https://ovsjg.dc.gov/page/funding-opportunities-current",
     "dc_dslbd_grants_raw.json":    "https://dslbd.dc.gov/",
     # Maryland
     "md_commerce_grants_raw.json": "https://commerce.maryland.gov/fund",
     "md_bworks_grants_raw.json":   "https://bworks.maryland.gov/",
     "md_dhcd_grants_raw.json":     "https://dhcd.maryland.gov/",
-    "md_grants_portal_raw.json":   "https://grants.maryland.gov/",
+    "md_grants_portal_raw.json":   "https://grants.maryland.gov/Pages/StateGrants.aspx",
     "md_msde_grants_raw.json":     "https://marylandpublicschools.org/about/pages/ofpos/gac/grantprograms/index.aspx",
     # New York
     "ny_esd_grants_raw.json":      "https://esd.ny.gov/",
-    "ny_grants_gateway_raw.json":  "https://grantsgateway.ny.gov/",
+    "ny_grants_gateway_raw.json":  "https://grantsgateway.ny.gov/IntelliGrants_NYSGG/module/nysgg/goportal.aspx?NavItem1=2",
     "ny_nyserda_grants_raw.json":  "https://www.nyserda.ny.gov/",
     "ny_gov_grants_raw.json":      "https://www.grants.ny.gov/",
     "ny_empire_grants_raw.json":   "https://esd.ny.gov/funding-opportunities",
@@ -266,6 +288,14 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
     tags_json  = parse_json_field(row["tags"])
     aof_json   = parse_json_field(row["areas_of_focus"])
     status     = STATUS_MAP.get((row["status"] or "").lower(), "unverified")
+
+    # If the deadline has already passed and this is not a rolling grant, expire it
+    if deadline and not bool(row["rolling"]):
+        try:
+            if datetime.fromisoformat(deadline).date() < date.today():
+                status = "expired"
+        except (ValueError, TypeError):
+            pass
 
     existing = conn.execute(
         text("SELECT id FROM opportunities WHERE opportunity_key = :k"), {"k": key}
@@ -400,6 +430,14 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
 def main(dry_run=False, min_score=MIN_SCORE):
     _ensure_opportunities_columns()
 
+    # Expire stale grants first so the table is clean before we sync new data
+    if not dry_run:
+        expired_count = expire_stale_grants()
+        if expired_count:
+            log.info(f"Expired {expired_count} stale opportunities (deadline passed)")
+        else:
+            log.info("No stale opportunities to expire")
+
     # Read all scraped grants
     read_db = database.SessionLocal()
     try:
@@ -475,7 +513,14 @@ def main(dry_run=False, min_score=MIN_SCORE):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sync live-ready scraped_grants → opportunities")
-    parser.add_argument("--dry-run",   action="store_true")
-    parser.add_argument("--min-score", type=float, default=MIN_SCORE)
+    parser.add_argument("--dry-run",     action="store_true")
+    parser.add_argument("--min-score",   type=float, default=MIN_SCORE)
+    parser.add_argument("--expire-only", action="store_true",
+                        help="Only expire stale grants — skip full sync")
     args = parser.parse_args()
-    main(dry_run=args.dry_run, min_score=args.min_score)
+
+    if args.expire_only:
+        n = expire_stale_grants()
+        print(f"Expired {n} stale grant(s).")
+    else:
+        main(dry_run=args.dry_run, min_score=args.min_score)

@@ -43,6 +43,9 @@ scheduler/local.settings.json
 # Scraper outputs (regenerated on every run)
 data/**/*_raw.json
 data/scrape_cache.json
+data/scraper_run_summary.json
+# Catch any stray root-level raw files (should never be here)
+*_raw.json
 scraper_run_summary.json
 
 # Codebase dumps / exports

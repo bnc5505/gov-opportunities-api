@@ -23,6 +23,9 @@ from base_scraper import (
 
 # CONFIG — change this section for each new state/source
 
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))   # scrapers/base/
+_PROJ_ROOT = os.path.dirname(os.path.dirname(_THIS_DIR))  # project root
+
 CONFIG = {
     "scraper_id":   "ny_esd",
     "state":        "NY",
@@ -30,6 +33,7 @@ CONFIG = {
     "base_url":     "https://esd.ny.gov",
     "domain":       "esd.ny.gov",
     "output_file":  "ny_esd_grants_raw.json",
+    "data_dir":     os.path.join(_PROJ_ROOT, "data", "ny"),
     "grant_keywords": [
         "grant", "funding", "opportunity", "program", "award",
         "loan", "incentive", "assistance", "support",
@@ -389,9 +393,16 @@ def run(config: Dict = CONFIG, save_json: bool = True,
             "total":      len(grants),
             "grants":     grants,
         }
-        with open(config["output_file"], "w") as f:
+        # Always write to data_dir/output_file — never relative to CWD
+        data_dir = config.get("data_dir", "")
+        if data_dir:
+            os.makedirs(data_dir, exist_ok=True)
+            out_path = os.path.join(data_dir, config["output_file"])
+        else:
+            out_path = config["output_file"]
+        with open(out_path, "w") as f:
             json.dump(out, f, indent=2, default=str)
-        log.info(f"Saved {len(grants)} grants → {config['output_file']}")
+        log.info(f"Saved {len(grants)} grants → {out_path}")
 
     if load_db and db_session:
         stats = load_to_db(grants, db_session)

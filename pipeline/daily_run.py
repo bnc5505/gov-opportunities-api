@@ -156,7 +156,16 @@ def main():
         log.info("SKIP: AI enrichment (--skip-enrich)")
         results["enrich"] = None
 
-    # Step 5: sync → opportunities
+    # Step 5: expire stale opportunities (deadline in the past, not rolling)
+    ok = run_step(
+        "Expire stale opportunities",
+        [PYTHON, str(PROJECT_ROOT / "pipeline" / "sync_opportunities.py"), "--expire-only"],
+    )
+    results["expire"] = ok
+    if not ok:
+        log.warning("Expire step had issues — continuing anyway")
+
+    # Step 6: sync → opportunities
     sync_cmd = [PYTHON, str(PROJECT_ROOT / "pipeline" / "sync_opportunities.py")]
     if args.dry_run:
         sync_cmd.append("--dry-run")
@@ -194,6 +203,7 @@ def _print_summary(results: dict, started_at: datetime):
         "load":              "Load JSON → scraped_grants",
         "deadlines":         "Deadline finder",
         "enrich":            "AI enrichment",
+        "expire":            "Expire stale opportunities",
         "sync":              "Sync → opportunities",
     }
     for key, label in labels.items():

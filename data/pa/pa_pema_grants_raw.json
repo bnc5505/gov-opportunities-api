@@ -1,5 +1,5 @@
 {
-  "scraped_at": "2026-04-03T19:37:57.094219",
+  "scraped_at": "2026-04-05T23:27:51.119066",
   "source": "https://www.pema.pa.gov/Grants/Pages/default.aspx",
   "state": "PA",
   "total": 3,
@@ -45,8 +45,8 @@
     },
     {
       "title": "Hazard Mitigation Grants",
-      "summary": "Funds projects aimed at reducing or eliminating the effects of disasters in Pennsylvania.",
-      "description": "The Hazard Mitigation Grants program provides funding to support projects that reduce disaster risks and enhance community resilience. Eligible applicants include counties, municipalities, and other organizations within Pennsylvania. The program aims to better prepare communities for emergencies and disasters, ensuring safety and recovery. Applications can be submitted through the Pennsylvania Emergency Management Agency (PEMA). Detailed guidance and resources are available to assist applicants.",
+      "summary": "This grant funds projects aimed at reducing and eliminating the effects of disasters in Pennsylvania.",
+      "description": "The Hazard Mitigation Grants program supports initiatives that help communities in Pennsylvania prepare for, respond to, and recover from emergencies and disasters. The program focuses on reducing risks associated with flooding, hazardous materials, and other emergencies. Eligible applicants include counties and municipalities within Pennsylvania. Applications can be submitted through the Pennsylvania Emergency Management Agency's official channels.",
       "deadline": "03/27/2027",
       "rolling": true,
       "is_annual": true,
@@ -57,18 +57,17 @@
       "award_text": null,
       "eligibility_individual": false,
       "eligibility_organization": true,
-      "eligibility_notes": "Eligible applicants include counties, municipalities, and other organizations within Pennsylvania.",
+      "eligibility_notes": "Eligible applicants include counties and municipalities within Pennsylvania.",
       "eligible_applicant_types": [
         "Counties",
-        "Municipalities",
-        "Organizations"
+        "Municipalities"
       ],
       "tags": [
-        "Disaster Mitigation",
-        "Emergency Management",
-        "Community Resilience",
-        "Floodplain Management",
-        "Public Safety"
+        "Disaster Preparedness",
+        "Flood Management",
+        "Emergency Response",
+        "Risk Reduction",
+        "Hazard Mitigation"
       ],
       "industry": "Emergency Management",
       "areas_of_focus": [
@@ -92,50 +91,53 @@
       "sponsor_website": "https://www.pema.pa.gov",
       "key_requirements": [
         "Applicants must be located in Pennsylvania.",
-        "Projects must aim to reduce disaster risks.",
-        "Applications must be submitted through PEMA."
+        "Projects must focus on disaster risk reduction.",
+        "Applications must be submitted through official PEMA channels."
       ],
       "state": "PA",
       "opportunity_type": "grant",
-      "extracted_at": "2026-04-03T19:37:55.129171",
+      "extracted_at": "2026-04-05T23:27:49.904970",
       "data_quality_score": 0.97,
       "needs_review": false,
       "status": "rolling"
     },
     {
       "title": "Public Assistance Program",
-      "summary": "This grant provides funding to help Pennsylvania communities recover from emergencies and disasters.",
-      "description": "The Public Assistance Program supports local and state governments, as well as certain private non-profits, in recovering from emergencies and disasters. The program provides financial assistance for debris removal, emergency protective measures, and the repair, replacement, or restoration of public infrastructure. Eligible applicants must demonstrate damages caused by a declared disaster. Applications can be submitted through the Pennsylvania Emergency Management Agency (PEMA).",
+      "summary": "Provides funding to help Pennsylvania communities recover from emergencies and disasters.",
+      "description": "The Public Assistance Program is designed to assist Pennsylvania communities in recovering from emergencies and disasters by providing financial aid for eligible projects. This program supports counties, municipalities, and other eligible entities in rebuilding infrastructure and addressing damages caused by disasters. Applicants must meet specific eligibility criteria and submit required documentation to apply. Funding is available for projects such as debris removal, emergency protective measures, and the repair or replacement of damaged facilities. Interested parties can find more information and apply through the Pennsylvania Emergency Management Agency (PEMA).",
       "deadline": "03/27/2027",
       "rolling": true,
-      "is_annual": false,
+      "is_annual": true,
       "posted_date": null,
       "award_min": 14500000.0,
       "award_max": 38400000.0,
-      "total_funding": null,
-      "award_text": null,
+      "total_funding": 38400000,
+      "award_text": "Over $38.4 million in aid",
       "eligibility_individual": false,
       "eligibility_organization": true,
-      "eligibility_notes": "Eligible applicants include local and state governments, as well as certain private non-profits, that have been impacted by a declared disaster.",
+      "eligibility_notes": "Eligible applicants include counties, municipalities, and other entities impacted by disasters.",
       "eligible_applicant_types": [
-        "Local Governments",
-        "State Governments",
-        "Private Non-Profits"
+        "Counties",
+        "Municipalities",
+        "Other eligible entities"
       ],
       "tags": [
         "Emergency Management",
         "Disaster Recovery",
-        "Public Infrastructure"
+        "Infrastructure",
+        "Public Safety",
+        "Funding"
       ],
       "industry": "Emergency Management",
       "areas_of_focus": [
-        "Capital",
-        "Technical Assistance"
+        "Capacity Building",
+        "Technical Assistance",
+        "Training"
       ],
       "sdg_alignment": [
         "SDG 11: Sustainable Cities and Communities"
       ],
-      "contact_name": null,
+      "contact_name": "Randy Padfield",
       "contact_email": null,
       "contact_phone": null,
       "opportunity_url": "https://www.pema.pa.gov/agencies/pema/emergency-managers/grants/public-assistance-program",
@@ -147,13 +149,13 @@
       "logo_url": null,
       "sponsor_website": "https://www.pema.pa.gov",
       "key_requirements": [
-        "Applicant must be a local or state government or eligible private non-profit.",
-        "Damages must be caused by a declared disaster.",
-        "Funding must be used for eligible activities such as debris removal or infrastructure repair."
+        "Applicant must be a county, municipality, or eligible entity in Pennsylvania.",
+        "Project must address damages caused by a disaster.",
+        "Required documentation must be submitted with the application."
       ],
       "state": "PA",
       "opportunity_type": "grant",
-      "extracted_at": "2026-04-03T19:37:56.884773",
+      "extracted_at": "2026-04-05T23:27:51.018523",
       "data_quality_score": 0.97,
       "needs_review": false,
       "status": "rolling"

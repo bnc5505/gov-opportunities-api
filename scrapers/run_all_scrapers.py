@@ -72,6 +72,11 @@ ALL_SOURCES: List[Dict] = [
     # New York
 
     {
+        "state":  "NY", "name": "NY Grants Gateway (SFS Browse Portal)",
+        "type":   "custom",
+        "module": "scrapers.ny.ny_grants_gateway_scraper",
+    },
+    {
         "state":  "NY", "name": "NY Empire State Development",
         "type":   "custom",
         "module": "scrapers.ny.ny_empire_scraper",
@@ -109,6 +114,11 @@ ALL_SOURCES: List[Dict] = [
 
     # Maryland
 
+    {
+        "state":  "MD", "name": "Maryland Governor's Grants Portal",
+        "type":   "custom",
+        "module": "scrapers.md.md_grants_portal_scraper",
+    },
     {
         "state":  "MD", "name": "MD Dept of Transportation – Grants",
         "module": "state_scraper_template",
@@ -172,6 +182,11 @@ ALL_SOURCES: List[Dict] = [
 
     # Washington D.C.
 
+    {
+        "state":  "DC", "name": "DC Central Grants Hub (dc.gov)",
+        "type":   "custom",
+        "module": "scrapers.dc.dc_central_scraper",
+    },
     {
         "state":  "DC", "name": "DC DMPED – Economic Development Grants",
         "module": "state_scraper_template",
@@ -403,7 +418,9 @@ def run_all(states: List[str] = None, no_cache: bool = False) -> List[Dict]:
         "total_grants": total_grants,
         "sources":      results,
     }
-    summary_path = os.path.join(PROJECT_ROOT, "scraper_run_summary.json")
+    data_dir = os.path.join(PROJECT_ROOT, "data")
+    os.makedirs(data_dir, exist_ok=True)
+    summary_path = os.path.join(data_dir, "scraper_run_summary.json")
     with open(summary_path, "w") as f:
         json.dump(summary, f, indent=2)
     log.info(f"Summary saved → {summary_path}")
