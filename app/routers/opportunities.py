@@ -1,95 +1,77 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime
 
 from database import get_db
 from models import Opportunity, State
+from rate_limit import limiter
 from schemas import (
     OpportunityCreate, OpportunityUpdate,
     OpportunityResponse, OpportunityListItem,
+    OpportunityFilters,
     PaginatedOpportunityResponse,
 )
 
 router = APIRouter(prefix="/opportunities", tags=["Opportunities"])
 
 
-def _build_query(db, search, opportunity_type, status, state_code,
-                 rolling, industry, agency_id, award_min, award_max,
-                 deadline_after, deadline_before, eligibility_individual,
-                 eligibility_organization, needs_review):
+def _build_query(db, f: OpportunityFilters):
     q = db.query(Opportunity).options(
         joinedload(Opportunity.agency),
         joinedload(Opportunity.state),
         joinedload(Opportunity.categories),
     )
-    if search:
+    if f.q:
         q = q.filter(or_(
-            Opportunity.title.ilike(f"%{search}%"),
-            Opportunity.summary.ilike(f"%{search}%"),
-            Opportunity.description.ilike(f"%{search}%"),
+            Opportunity.title.ilike(f"%{f.q}%"),
+            Opportunity.summary.ilike(f"%{f.q}%"),
+            Opportunity.description.ilike(f"%{f.q}%"),
         ))
-    if opportunity_type:
-        q = q.filter(Opportunity.opportunity_type == opportunity_type)
-    if status:
-        q = q.filter(Opportunity.status == status)
-    if state_code:
-        q = q.join(Opportunity.state).filter(State.code == state_code.upper())
-    if rolling is not None:
-        q = q.filter(Opportunity.rolling == rolling)
-    if industry:
-        q = q.filter(Opportunity.industry.ilike(f"%{industry}%"))
-    if agency_id:
-        q = q.filter(Opportunity.agency_id == agency_id)
-    if award_min is not None:
-        q = q.filter(Opportunity.award_max >= award_min)
-    if award_max is not None:
-        q = q.filter(Opportunity.award_min <= award_max)
-    if deadline_after:
-        q = q.filter(Opportunity.deadline >= deadline_after)
-    if deadline_before:
-        q = q.filter(Opportunity.deadline <= deadline_before)
-    if eligibility_individual is not None:
-        q = q.filter(Opportunity.eligibility_individual == eligibility_individual)
-    if eligibility_organization is not None:
-        q = q.filter(Opportunity.eligibility_organization == eligibility_organization)
-    if needs_review is not None:
-        q = q.filter(Opportunity.needs_review == needs_review)
+    if f.opportunity_type:
+        q = q.filter(Opportunity.opportunity_type == f.opportunity_type)
+    if f.status:
+        q = q.filter(Opportunity.status == f.status)
+    if f.state_code:
+        q = q.join(Opportunity.state).filter(State.code == f.state_code.upper())
+    if f.rolling is not None:
+        q = q.filter(Opportunity.rolling == f.rolling)
+    if f.industry:
+        q = q.filter(Opportunity.industry.ilike(f"%{f.industry}%"))
+    if f.agency_id:
+        q = q.filter(Opportunity.agency_id == f.agency_id)
+    if f.award_min is not None:
+        q = q.filter(Opportunity.award_max >= f.award_min)
+    if f.award_max is not None:
+        q = q.filter(Opportunity.award_min <= f.award_max)
+    if f.deadline_after:
+        q = q.filter(Opportunity.deadline >= f.deadline_after)
+    if f.deadline_before:
+        q = q.filter(Opportunity.deadline <= f.deadline_before)
+    if f.eligibility_individual is not None:
+        q = q.filter(Opportunity.eligibility_individual == f.eligibility_individual)
+    if f.eligibility_organization is not None:
+        q = q.filter(Opportunity.eligibility_organization == f.eligibility_organization)
+    if f.needs_review is not None:
+        q = q.filter(Opportunity.needs_review == f.needs_review)
     return q
 
 
+@limiter.limit("100/minute")
 @router.get("", response_model=PaginatedOpportunityResponse)
 def list_opportunities(
-    q: Optional[str] = Query(None),
-    opportunity_type: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    state_code: Optional[str] = Query(None),
-    rolling: Optional[bool] = Query(None),
-    industry: Optional[str] = Query(None),
-    agency_id: Optional[int] = Query(None),
-    award_min: Optional[float] = Query(None),
-    award_max: Optional[float] = Query(None),
-    deadline_after: Optional[datetime] = Query(None),
-    deadline_before: Optional[datetime] = Query(None),
-    eligibility_individual: Optional[bool] = Query(None),
-    eligibility_organization: Optional[bool] = Query(None),
-    needs_review: Optional[bool] = Query(None),
-    sort_by: str = Query("deadline"),
+    request: Request,
+    filters: OpportunityFilters = Depends(),
+    sort_by: Literal["deadline", "award_min", "award_max", "created_at", "title"] = Query("deadline"),
     sort_order: str = Query("asc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    query = _build_query(
-        db, q, opportunity_type, status, state_code,
-        rolling, industry, agency_id, award_min, award_max,
-        deadline_after, deadline_before, eligibility_individual,
-        eligibility_organization, needs_review,
-    )
-
+    query    = _build_query(db, filters)
     sort_col = getattr(Opportunity, sort_by, Opportunity.deadline)
-    query = query.order_by(sort_col.asc() if sort_order == "asc" else sort_col.desc())
+    query    = query.order_by(sort_col.asc() if sort_order == "asc" else sort_col.desc())
 
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
@@ -97,7 +79,7 @@ def list_opportunities(
     return PaginatedOpportunityResponse(
         total=total,
         page=page,
-        page_size=per_page,
+        per_page=per_page,
         total_pages=-(-total // per_page),
         data=items,
     )
@@ -124,9 +106,8 @@ def get_opportunity(opportunity_id: int, db: Session = Depends(get_db)):
 
 @router.post("", response_model=OpportunityResponse, status_code=201)
 def create_opportunity(payload: OpportunityCreate, db: Session = Depends(get_db)):
-    # exclude relationship helpers — they're not ORM columns
     data = payload.model_dump(exclude={"category_ids", "applicant_type_ids"})
-    opp = Opportunity(**data)
+    opp  = Opportunity(**data)
     db.add(opp)
     db.commit()
     db.refresh(opp)

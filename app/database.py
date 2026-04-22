@@ -8,8 +8,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./gov_grants.db")
 
-# SQLite needs check_same_thread=False for FastAPI's multithreaded requests
-if DATABASE_URL.startswith("sqlite"):
+if DATABASE_URL.startswith("sqlite"):  # check_same_thread=False required for SQLite + FastAPI threads
     engine = create_engine(
         DATABASE_URL,
         connect_args={"check_same_thread": False},
@@ -48,7 +47,6 @@ def seed_initial_data():
     db = SessionLocal()
 
     try:
-        # If agencies already exist, assume everything is seeded
         if db.query(Agency).count() > 0:
             print("Already seeded, skipping")
             return

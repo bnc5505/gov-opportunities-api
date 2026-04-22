@@ -11,7 +11,6 @@ import enum
 Base = declarative_base()
 
 
-# Many-to-many join tables — no model class needed
 opportunity_categories = Table(
     "opportunity_categories",
     Base.metadata,
@@ -38,7 +37,6 @@ class OpportunityType(str, enum.Enum):
 
 
 class OpportunityStatus(str, enum.Enum):
-    # UNVERIFIED is the default for anything that hasn't been confirmed active
     ACTIVE = "active"
     EXPIRED = "expired"
     ARCHIVED = "archived"
@@ -53,7 +51,6 @@ class ReviewStatus(str, enum.Enum):
 
 
 class State(Base):
-    """Pilot states (PA, NY, MD, DC). Adding a new state is just inserting a row."""
     __tablename__ = "states"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -75,16 +72,12 @@ class Source(Base):
     name = Column(String(255), nullable=False)
     url = Column(String(1000), nullable=False)
     state_id = Column(Integer, ForeignKey("states.id"), nullable=True)
-
-    # options: api, scraper, rss, manual
-    scraper_type = Column(String(50), nullable=False, default="scraper")
+    scraper_type = Column(String(50), nullable=False, default="scraper")  # api, scraper, rss, manual
     scrape_frequency_hours = Column(Integer, default=24)
-
     last_scraped_at = Column(DateTime, nullable=True)
     last_success_at = Column(DateTime, nullable=True)
     consecutive_failures = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -94,10 +87,7 @@ class Source(Base):
 
 
 class Agency(Base):
-    """
-    Government agencies that offer funding.
-    Federal agencies leave state_id null; state/local agencies link to their state.
-    """
+    """Government agencies that offer funding. Federal agencies leave state_id null."""
     __tablename__ = "agencies"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -105,12 +95,8 @@ class Agency(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     website_url = Column(String(1000), nullable=True)
-
-    # federal, state, or local
-    level = Column(String(20), nullable=False, default="federal")
-
+    level = Column(String(20), nullable=False, default="federal")  # federal, state, local
     state_id = Column(Integer, ForeignKey("states.id"), nullable=True)
-
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -119,7 +105,6 @@ class Agency(Base):
 
 
 class Category(Base):
-    """25 opportunity categories from the project charter. parent_id supports subcategories."""
     __tablename__ = "categories"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -139,10 +124,7 @@ class Category(Base):
 
 
 class ApplicantType(Base):
-    """
-    Types of applicants eligible to apply.
-    is_individual lets the frontend filter without a join.
-    """
+    """is_individual lets the frontend filter by individual vs. organization without a join."""
     __tablename__ = "applicant_types"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -161,68 +143,46 @@ class ApplicantType(Base):
 
 class Opportunity(Base):
     """
-    Central table — every grant, loan, fellowship, and accelerator ends up here.
-
-    opportunity_key is sha256(state_code|opportunity_url), used for upserts.
-    raw_source_data keeps the original scraped JSON so we can reprocess without re-scraping.
+    Central opportunities table.
+    opportunity_key: SHA-256 dedup key — sha256(state_code|opportunity_url)
     """
     __tablename__ = "opportunities"
 
     id = Column(Integer, primary_key=True, index=True)
-
-    # Dedup anchor for upserts — sha256(state_code + "|" + opportunity_url)
     opportunity_key = Column(String(64), unique=True, nullable=True, index=True)
-
     title = Column(String(500), nullable=False, index=True)
     description = Column(Text, nullable=True)
     summary = Column(String(1000), nullable=True)
-
     opportunity_type = Column(
         Enum(OpportunityType),
         nullable=False,
         default=OpportunityType.GRANT
     )
-
     source_id = Column(Integer, ForeignKey("sources.id"), nullable=True)
     agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=True)
     state_id = Column(Integer, ForeignKey("states.id"), nullable=True)
-
     eligibility_individual = Column(Boolean, default=False, index=True)
     eligibility_organization = Column(Boolean, default=False, index=True)
     eligibility_description = Column(Text, nullable=True)
-
     award_min = Column(Float, nullable=True)
     award_max = Column(Float, nullable=True)
     total_funding = Column(Float, nullable=True)
-
     deadline = Column(DateTime, nullable=True, index=True)
-
-    # rolling = no fixed deadline
-    rolling = Column(Boolean, nullable=True)
-
-    # grant info page (vs the application form)
-    opportunity_url = Column(String(1000), nullable=True)
-
-    # link the Apply button points to
-    application_url = Column(String(1000), nullable=True)
-
+    rolling = Column(Boolean, nullable=True)  # no fixed deadline
+    opportunity_url = Column(String(1000), nullable=True)   # grant info page
+    application_url = Column(String(1000), nullable=True)   # direct apply link
     tags = Column(JSON, nullable=True)
-    # e.g. ["Capital", "Networks", "Capacity Building"]
     opportunity_gap_resources = Column(JSON, nullable=True)
     industry = Column(String(255), nullable=True)
-
     contact_name = Column(String(255), nullable=True)
     contact_email = Column(String(255), nullable=True)
-
     status = Column(
         Enum(OpportunityStatus),
         default=OpportunityStatus.UNVERIFIED,
         index=True
     )
-
     data_quality_score = Column(Float, nullable=True)
     needs_review = Column(Boolean, default=False)
-
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     last_synced_at = Column(DateTime, nullable=True)
@@ -263,39 +223,28 @@ class OpportunityDocument(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     opportunity_id = Column(Integer, ForeignKey("opportunities.id"), nullable=False)
-
     title = Column(String(255), nullable=False)
     document_type = Column(String(50), nullable=False)
     file_url = Column(String(1000), nullable=False)
     file_size = Column(Integer, nullable=True)
-
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     opportunity = relationship("Opportunity", back_populates="documents")
 
 
 class User(Base):
-    """User accounts. user_type is either 'individual' or 'organization'."""
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
-
-    # individual or organization
-    user_type = Column(String(20), nullable=False, default="individual")
-
-    # only set for organizational users
+    user_type = Column(String(20), nullable=False, default="individual")  # individual, organization
     organization_name = Column(String(255), nullable=True)
     organization_type = Column(String(100), nullable=True)
-
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
-
-    # stores preferred states, categories, etc. as JSON
     preferences = Column(JSON, nullable=True)
-
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     last_login = Column(DateTime, nullable=True)
@@ -311,9 +260,61 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+class ScrapedGrant(Base):
+    """Staging table for raw scraped data. Enriched here before sync to opportunities."""
+    __tablename__ = "scraped_grants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(500), nullable=False)
+    state = Column(String(5), nullable=True)
+    status = Column(String(50), nullable=True)
+    deadline = Column(String(20), nullable=True)
+    rolling = Column(Boolean, nullable=True)
+    is_annual = Column(Boolean, nullable=True)
+    award_min = Column(Float, nullable=True)
+    award_max = Column(Float, nullable=True)
+    total_funding = Column(Float, nullable=True)
+    award_text = Column(String(500), nullable=True)
+    description = Column(Text, nullable=True)
+    summary = Column(String(1000), nullable=True)
+    eligibility_notes = Column(Text, nullable=True)
+    contact_email = Column(String(200), nullable=True)
+    contact_name = Column(String(200), nullable=True)
+    application_url = Column(String(1000), nullable=True)
+    opportunity_url = Column(String(1000), nullable=True)
+    tags = Column(Text, nullable=True)
+    areas_of_focus = Column(Text, nullable=True)
+    industry = Column(String(200), nullable=True)
+    data_quality_score = Column(Float, nullable=True)
+    needs_review = Column(Boolean, default=False)
+    source_file = Column(String(500), nullable=True)
+    content_hash = Column(String(64), nullable=True, index=True)
+    combined_text = Column(Text, nullable=True)
+    logo_url = Column(String(500), nullable=True)
+    loaded_at = Column(DateTime, nullable=True)
+    enriched_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ScraperRun(Base):
+    """Tracks scraper execution history for monitoring."""
+    __tablename__ = "scraper_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    run_id = Column(String(100), nullable=False, index=True)
+    scraper_name = Column(String(200), nullable=False)
+    started_at = Column(DateTime, nullable=False, index=True)
+    completed_at = Column(DateTime, nullable=True)
+    grants_found = Column(Integer, default=0)
+    grants_new = Column(Integer, default=0)
+    grants_updated = Column(Integer, default=0)
+    grants_errors = Column(Integer, default=0)
+    status = Column(String(50), nullable=False)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 class SavedOpportunity(Base):
-    """A user's bookmarked opportunity, with optional personal notes."""
+    """A user's bookmarked opportunity, with optional notes."""
     __tablename__ = "saved_opportunities"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -343,10 +344,7 @@ class SavedSearch(Base):
 
 
 class ReviewQueue(Base):
-    """
-    Human-in-the-loop review for low-confidence pipeline records.
-    Records land here when the quality score is below the threshold or the scraper flagged them.
-    """
+    """Low-confidence pipeline records queued for human review."""
     __tablename__ = "review_queue"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -357,7 +355,6 @@ class ReviewQueue(Base):
         default=ReviewStatus.PENDING,
         index=True
     )
-
     assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewer_notes = Column(Text, nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
@@ -367,24 +364,19 @@ class ReviewQueue(Base):
 
 
 class ScrapeLog(Base):
-    """One log entry per scraper run, giving us a history of pipeline health."""
+    """One log entry per scraper run."""
     __tablename__ = "scrape_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     source_id = Column(Integer, ForeignKey("sources.id"), nullable=False)
-
     started_at = Column(DateTime, nullable=False)
     completed_at = Column(DateTime, nullable=True)
-
     records_found = Column(Integer, default=0)
     records_added = Column(Integer, default=0)
     records_updated = Column(Integer, default=0)
     records_failed = Column(Integer, default=0)
-
-    # SUCCESS or FAILED
-    run_status = Column(String(20), nullable=False, default="SUCCESS")
+    run_status = Column(String(20), nullable=False, default="SUCCESS")  # SUCCESS, FAILED
     error_message = Column(Text, nullable=True)
-
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     source = relationship("Source", back_populates="scrape_logs")

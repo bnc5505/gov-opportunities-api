@@ -1,15 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from passlib.context import CryptContext
 
+from auth import create_access_token
 from database import get_db
 from models import User
 from schemas import UserCreate, UserUpdate, UserResponse
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router     = APIRouter(prefix="/users", tags=["Users"])
+auth_router = APIRouter(prefix="/auth",  tags=["Auth"])
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+@auth_router.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    """Demo login — accepts any credentials and returns a JWT. No DB check yet."""
+    access_token = create_access_token(data={"sub": form_data.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.get("", response_model=List[UserResponse])

@@ -17,14 +17,39 @@ import PyPDF2
 from bs4 import BeautifulSoup
 from datetime import datetime
 from dateutil import parser as dateutil_parser
-from typing import Optional, Dict, List, Any
+from functools import wraps
+from typing import Optional, Dict, List, Any, Callable
 from openai import AzureOpenAI
 from pathlib import Path
+
+# Ensure project root is in sys.path so scrapers.constants is importable
+# regardless of how this module is invoked (directly, as package, or in tests).
+_proj_root = Path(__file__).resolve().parent.parent.parent
+if str(_proj_root) not in sys.path:
+    sys.path.insert(0, str(_proj_root))
+
+from scrapers.constants import (
+    REQUEST_TIMEOUT,
+    PDF_REQUEST_TIMEOUT,
+    REQUEST_DELAY,
+    MIN_PDF_CHARS,
+    MAX_PDF_PAGES,
+    AI_TEXT_LIMIT,
+    AI_CALL_TIMEOUT,
+    MAX_RETRIES,
+    RETRY_INITIAL_DELAY,
+    RETRY_BACKOFF_FACTOR,
+    MAX_AI_CONCURRENT,
+    MAX_HTTP_CONCURRENT,
+    MIN_YEAR,
+    MAX_YEAR,
+    USER_AGENT,
+)
 
 # Load .env from project root so Azure credentials are available
 try:
     from dotenv import load_dotenv as _load_dotenv
-    _load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
+    _load_dotenv(_proj_root / ".env")
 except ImportError:
     pass  # python-dotenv not installed; rely on shell environment
 
@@ -35,14 +60,50 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # scrapers/base/../../.. = project root
+
+def retry_with_backoff(
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+    backoff_factor: float = 2.0,
+    exceptions: tuple = (requests.RequestException, requests.Timeout, requests.ConnectionError),
+) -> Callable:
+    """
+    Decorator that retries a function with exponential backoff on network failures.
+    Delays: 1s → 2s → 4s (with default settings).
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            delay = initial_delay
+            last_exception = None
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    last_exception = e
+                    if attempt < max_retries:
+                        log.warning(
+                            f"Attempt {attempt + 1}/{max_retries} failed for "
+                            f"{func.__name__}: {type(e).__name__}: {e}. "
+                            f"Retrying in {delay:.1f}s..."
+                        )
+                        time.sleep(delay)
+                        delay *= backoff_factor
+                    else:
+                        log.error(
+                            f"All {max_retries} retry attempts exhausted for "
+                            f"{func.__name__}: {type(e).__name__}: {e}"
+                        )
+            raise last_exception
+        return wrapper
+    return decorator
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _CACHE_PATH   = _PROJECT_ROOT / "data" / "scrape_cache.json"
 
 class ScraperCache:
     """
-    URL-keyed cache. Stores content hash + extracted grant data.
-    On day 2+, unchanged pages are returned from cache — skipping PDF
-    download and AI calls entirely.
+    URL-keyed content-hash cache. Unchanged pages skip PDF download and AI calls.
     Thread-safe via a single lock.
     """
     def __init__(self, path: Path):
@@ -98,27 +159,14 @@ class ScraperCache:
 
 # Module-level singletons — shared across all scraper threads
 _cache    = ScraperCache(_CACHE_PATH)
-_AI_SEM   = threading.Semaphore(3)   # max 3 concurrent Azure OpenAI calls
-_HTTP_SEM = threading.Semaphore(10)  # max 10 concurrent outbound HTTP requests
+_AI_SEM   = threading.Semaphore(MAX_AI_CONCURRENT)
+_HTTP_SEM = threading.Semaphore(MAX_HTTP_CONCURRENT)
 
 TODAY      = datetime.today()
 THIS_YEAR  = TODAY.year
 NEXT_YEAR  = THIS_YEAR + 1
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    )
-}
-
-MIN_PDF_CHARS   = 300    # PDFs with less text than this are blank forms — skip them
-MAX_PDF_PAGES   = 15     # Only read first N pages of a PDF
-AI_TEXT_LIMIT   = 14000  # Max chars sent to Azure AI per call
-REQUEST_TIMEOUT     = 10   # seconds — detail page fetches
-PDF_REQUEST_TIMEOUT = 30   # seconds — kept higher for large PDF downloads
-REQUEST_DELAY   = 1.2    # Seconds between requests — be polite to servers
+HEADERS = {"User-Agent": USER_AGENT}
 
 
 def clean_ordinal(text: str) -> str:
@@ -142,11 +190,12 @@ def try_parse(text: str) -> Optional[datetime]:
     """
     Try to parse a date string.
     Returns datetime or None.
-    Only accepts years between 2025 and 2030 to avoid garbage.
+    Accepts years 2020-2030: past years (2020-2024) are valid expired deadlines;
+    anything outside this range is treated as a parse failure.
     """
     try:
         dt = dateutil_parser.parse(text, fuzzy=True)
-        if 2025 <= dt.year <= 2030:
+        if MIN_YEAR <= dt.year <= MAX_YEAR:
             return dt
     except Exception:
         pass
@@ -160,16 +209,45 @@ def resolve_year(month_day_text: str) -> Optional[Dict]:
       - If the date has NOT passed yet this year  →  use THIS_YEAR
       - If the date HAS already passed this year  →  use NEXT_YEAR
       - If it is within 7 days                    →  flag for review
+
+    Validates that the parsed month actually appears in the input text to
+    prevent dateutil's fuzzy parser from latching onto today's date for
+    garbage inputs like "not a month day" or empty strings.
     """
+    if not month_day_text or not month_day_text.strip():
+        return None
+
+    text_lower = month_day_text.lower().strip()
+
     for year in [THIS_YEAR, NEXT_YEAR]:
         try:
             dt = dateutil_parser.parse(f"{month_day_text} {year}", fuzzy=True)
-            if dt.year == year:
-                if dt.date() >= TODAY.date():
-                    return {
-                        "deadline":     dt.strftime("%m/%d/%Y"),
-                        "needs_review": is_expiring_soon(dt),
-                    }
+            if dt.year != year:
+                continue
+
+            # Guard: the parsed month must actually appear in the input text.
+            # Without this, fuzzy=True turns garbage strings into today's date.
+            month_abbr = dt.strftime("%b").lower()   # e.g. "apr"
+            month_full = dt.strftime("%B").lower()   # e.g. "april"
+            month_num  = str(dt.month)               # e.g. "4"
+
+            month_present = (
+                month_abbr in text_lower
+                or month_full in text_lower
+                # MM/DD numeric format: month digit followed by "/"
+                or bool(re.search(
+                    rf"(?:^|[^/\d])0?{re.escape(month_num)}[/]",
+                    month_day_text,
+                ))
+            )
+            if not month_present:
+                continue
+
+            if dt.date() >= TODAY.date():
+                return {
+                    "deadline":     dt.strftime("%m/%d/%Y"),
+                    "needs_review": is_expiring_soon(dt),
+                }
         except Exception:
             continue
     return None
@@ -275,7 +353,9 @@ def extract_date(text: str) -> Dict:
                 )
                 return result
 
-    # Layer 4: any full date in text
+    # Layer 4: any full date in text (explicit year present in all patterns)
+    # Past dates are accepted as-is — an explicit year like 2024 means the
+    # grant deadline has already passed, not that the year should be discarded.
     full_date_patterns = [
         r"\b(\d{1,2}/\d{1,2}/\d{4})\b",
         r"\b(\d{1,2}/\d{1,2}/\d{2})\b",
@@ -289,7 +369,7 @@ def extract_date(text: str) -> Dict:
         for m in re.finditer(pat, text, re.IGNORECASE):
             raw = clean_ordinal(m.group(1))
             dt  = try_parse(raw)
-            if dt and dt.date() >= TODAY.date():
+            if dt:
                 candidates.append({"dt": dt, "raw": m.group(0)})
 
     if candidates:
@@ -473,20 +553,29 @@ def extract_amount(text: str) -> Dict:
     return result
 
 
+@retry_with_backoff(max_retries=MAX_RETRIES, initial_delay=RETRY_INITIAL_DELAY)
+def _fetch_with_retry(url: str, timeout: int) -> requests.Response:
+    """Raw GET with exponential backoff. Raises on non-200 or network error."""
+    time.sleep(REQUEST_DELAY)
+    with _HTTP_SEM:
+        r = requests.get(url, headers=HEADERS, timeout=timeout)
+    if r.status_code != 200:
+        log.warning(f"  HTTP {r.status_code} for {url}")
+        r.raise_for_status()  # raises requests.HTTPError — caught by decorator
+    return r
+
+
 def safe_get(url: str, retries: int = 2,
              timeout: int = REQUEST_TIMEOUT) -> Optional[requests.Response]:
-    """GET with retries and polite delay."""
-    for attempt in range(retries):
-        try:
-            time.sleep(REQUEST_DELAY)
-            with _HTTP_SEM:
-                r = requests.get(url, headers=HEADERS, timeout=timeout)
-            if r.status_code == 200:
-                return r
-            log.warning(f"  HTTP {r.status_code} for {url}")
-        except Exception as e:
-            log.warning(f"  Request error (attempt {attempt+1}): {e}")
-    return None
+    """GET with automatic retry and polite delay. Returns None on final failure."""
+    try:
+        return _fetch_with_retry(url, timeout=timeout)
+    except requests.RequestException as e:
+        log.warning(
+            f"  Failed to fetch {url} after retries: "
+            f"{type(e).__name__}: {e}. Check network connection or URL validity."
+        )
+        return None
 
 
 def extract_pdf_text(url: str) -> Optional[str]:
@@ -505,18 +594,20 @@ def extract_pdf_text(url: str) -> Optional[str]:
             for i in range(pages)
         )
         if len(text.strip()) < MIN_PDF_CHARS:
-            log.info(f"  Skipping blank/form PDF: {url}")
+            log.info(f"  Skipping blank/form PDF (< {MIN_PDF_CHARS} chars): {url}")
             return None
         return text
+    except PyPDF2.errors.PdfReadError as e:
+        log.warning(f"  PDF parse failed for {url}: {type(e).__name__}: {e}. File may be encrypted or corrupted.")
+        return None
     except Exception as e:
-        log.warning(f"  PDF extract error: {e}")
+        log.warning(f"  Unexpected error reading PDF {url}: {type(e).__name__}: {e}")
         return None
 
 
 def ai_extract(combined_text: str, source_url: str, state: str) -> Optional[Dict]:
     """
-    Send combined HTML + PDF text to Azure OpenAI for final intelligent extraction.
-    This catches everything the regex may have missed.
+    Send combined HTML + PDF text to Azure OpenAI for structured field extraction.
     """
     api_key  = os.getenv("AZURE_OPENAI_API_KEY")
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -597,7 +688,7 @@ TEXT TO ANALYZE (source: {source_url}):
                 ],
                 temperature=0,
                 max_tokens=2500,
-                timeout=30,
+                timeout=AI_CALL_TIMEOUT,
             )
         raw = resp.choices[0].message.content
         # Strip markdown code fences if present
@@ -605,24 +696,18 @@ TEXT TO ANALYZE (source: {source_url}):
         raw = re.sub(r"```$",        "", raw.strip())
         return json.loads(raw.strip())
     except APITimeoutError:
-        log.warning(f"Azure AI timeout for {source_url} — skipping")
+        log.warning(f"Azure AI timeout for {source_url} — skipping (will retry next run)")
+        return None
+    except json.JSONDecodeError as e:
+        log.warning(f"Azure AI returned invalid JSON for {source_url}: {e}. Raw snippet: {raw[:200]!r}")
         return None
     except Exception as e:
-        log.error(f"Azure AI error: {e}")
+        log.error(f"Azure AI call failed for {source_url}: {type(e).__name__}: {e}")
         return None
 
 
 def calculate_quality_score(grant: Dict) -> float:
-    """
-    Score from 0.0 to 1.0 based on how many key fields are populated.
-    Below 0.5 → needs_review = True automatically.
-
-    Notes:
-    - deadline and rolling share one 0.15 slot (either counts).
-    - application_url only scores if explicitly set by the scraper or AI
-      (not defaulted from source_url — that default was removed).
-    - contact_email weight reduced to 0.03 (rarely published on gov sites).
-    """
+    """0.0–1.0 completeness score. deadline and rolling share one 0.15 slot."""
     weights = {
         "title":             0.15,
         "description":       0.15,
@@ -675,9 +760,7 @@ def clean_and_validate(raw: Dict, state: str, source_url: str) -> Dict:
     grant.setdefault("sdg_alignment",            [])
     grant.setdefault("industry",                 None)
     grant.setdefault("opportunity_url",          source_url)
-    # application_url intentionally NOT defaulted to source_url.
-    # Leaving it null lets the enrichment step fill it with a real apply link.
-    # sync_opportunities.py falls back to opportunity_url when still null.
+    # application_url left null intentionally — enrichment fills it; sync falls back to opportunity_url
     grant.setdefault("fee_required",             False)
     grant.setdefault("equity_percentage",        False)
     grant.setdefault("safe_note",                False)

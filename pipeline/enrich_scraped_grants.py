@@ -16,6 +16,7 @@ APP_DIR      = PROJECT_ROOT / "app"
 DATA_ROOT    = PROJECT_ROOT / "data"
 
 sys.path.insert(0, str(APP_DIR))
+sys.path.insert(0, str(PROJECT_ROOT))
 os.chdir(str(APP_DIR))           # SQLite resolves to app/gov_grants.db
 
 from dotenv import load_dotenv
@@ -24,6 +25,14 @@ load_dotenv(PROJECT_ROOT / ".env")
 from openai import AzureOpenAI
 import database
 from sqlalchemy import text
+from pipeline.constants import (
+    TARGET_SCORE,
+    AI_TEXT_LIMIT,
+    AI_CALL_TIMEOUT,
+    PASS2_LIMIT_DEFAULT,
+    MAX_AI_CONCURRENT,
+    MAX_HTTP_CONCURRENT,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,14 +41,11 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-TARGET_SCORE    = 0.80   # enrich everything below this
-AI_TEXT_LIMIT   = 8_000  # chars of combined_text sent to model in Pass 1
-THIS_YEAR       = datetime.utcnow().year
-NEXT_YEAR       = THIS_YEAR + 1
-PASS2_LIMIT_DEFAULT = 50  # max rows sent to Pass 2 per run (cost control)
+THIS_YEAR = datetime.utcnow().year
+NEXT_YEAR = THIS_YEAR + 1
 
-_AI_SEM   = threading.Semaphore(3)   # max 3 concurrent Azure OpenAI calls
-_HTTP_SEM = threading.Semaphore(10)  # max 10 concurrent outbound HTTP fetches
+_AI_SEM   = threading.Semaphore(MAX_AI_CONCURRENT)
+_HTTP_SEM = threading.Semaphore(MAX_HTTP_CONCURRENT)
 
 _STATE_DIRS = ["dc", "md", "ny", "pa"]
 
@@ -53,7 +59,7 @@ HEADERS = {
     )
 }
 
-# ── Link patterns that suggest a real apply URL ───────────────
+# Apply and PDF link patterns used in Pass 2 link extraction
 APPLY_LINK_PATTERNS = re.compile(
     r"apply|application|how.to.apply|submit.proposal|submit.application|"
     r"grant.application|apply.now|apply.here|apply.online",
@@ -92,7 +98,6 @@ def recalculate_score(fields: dict) -> float:
     return round(score, 2)
 
 
-# ── Database helpers ──────────────────────────────────────────
 
 def build_text_index():
     """
@@ -146,7 +151,7 @@ def build_client():
     ), deploy
 
 
-AI_CALL_TIMEOUT = 30  # seconds — if Azure OpenAI doesn't respond, skip and retry next run
+# AI_CALL_TIMEOUT is imported from pipeline.constants
 
 
 def _call_ai(client, deploy, system_msg: str, user_msg: str, max_tokens: int = 2000):
@@ -179,9 +184,7 @@ def _call_ai(client, deploy, system_msg: str, user_msg: str, max_tokens: int = 2
         return None
 
 
-# ═══════════════════════════════════════════════════════════════
-# PASS 1 — Extract fields from pre-scraped combined_text
-# ═══════════════════════════════════════════════════════════════
+# Pass 1: extract fields from cached combined_text
 
 PASS1_PROMPT = """
 You are an expert at reading government and foundation grant documents.
@@ -293,9 +296,7 @@ def _merge_pass1(row: dict, ai: dict) -> dict:
     return updated
 
 
-# ═══════════════════════════════════════════════════════════════
-# PASS 2 — Deep link extraction for rows still missing apply URL or deadline
-# ═══════════════════════════════════════════════════════════════
+# Pass 2: deep link extraction for rows still missing apply URL or deadline
 
 PASS2_PROMPT = """
 I found these links on a government grant page. Which one is the \
@@ -491,9 +492,7 @@ def _write_pass2_result(row_id, updates, row_dict):
         db.close()
 
 
-# ═══════════════════════════════════════════════════════════════
-# PASS 1 write (unchanged from before)
-# ═══════════════════════════════════════════════════════════════
+# Pass 1 write helpers
 
 def _finalise(merged: dict) -> dict:
     """Serialize list fields to JSON strings and compute score."""
@@ -574,9 +573,7 @@ def _write_pass1_result(row_id, merged):
         db.close()
 
 
-# ═══════════════════════════════════════════════════════════════
-# PASS 3 — Score recalculation + summary report
-# ═══════════════════════════════════════════════════════════════
+# Pass 3: score recalculation and summary
 
 def _run_pass3(touched_ids: list[int], min_score: float):
     """
@@ -617,9 +614,6 @@ def _run_pass3(touched_ids: list[int], min_score: float):
     return still_incomplete
 
 
-# ═══════════════════════════════════════════════════════════════
-# MAIN
-# ═══════════════════════════════════════════════════════════════
 
 def main(
     dry_run: bool = False,
@@ -637,7 +631,6 @@ def main(
 
     url_index, title_index = build_text_index()
 
-    # ── Fetch rows for Pass 1 ────────────────────────────────
     db = database.SessionLocal()
     try:
         if force:
@@ -660,6 +653,14 @@ def main(
     score_before    = [r["data_quality_score"] or 0 for r in rows]
     p1_touched_ids  = []
 
+    errors_by_type = {
+        "no_text":    0,
+        "ai_timeout": 0,
+        "json_parse": 0,
+        "db_write":   0,
+        "other":      0,
+    }
+
     log.info(f"Pass 1 — grants to enrich: {total}  "
              f"(score < {min_score}"
              f"{', force=True' if force else ', incremental'})")
@@ -669,7 +670,6 @@ def main(
         print("Use --force to re-enrich everything.")
         return
 
-    # ── Pass 1: concurrent AI extraction ────────────────────
     print(f"\n{'─'*60}")
     print(f"PASS 1 — Extract from cached scraped text ({total} grants)")
     print(f"{'─'*60}")
@@ -684,15 +684,18 @@ def main(
             try:
                 row_id, merged, status, old_score = future.result()
             except Exception as exc:
-                log.error(f"  Unexpected error on future {i}: {exc}")
+                log.error(f"  Unexpected error on future {i}: {type(exc).__name__}: {exc}")
                 p1_ai_fail += 1
+                errors_by_type["other"] += 1
                 continue
 
             if status == "no_text":
                 log.warning(f"  [{i}/{total}] No combined_text — skipping")
                 p1_no_text += 1
+                errors_by_type["no_text"] += 1
             elif status == "ai_fail":
                 p1_ai_fail += 1
+                errors_by_type["other"] += 1
             elif status == "dry_run":
                 p1_enriched += 1
             elif status == "ok":
@@ -702,10 +705,11 @@ def main(
                     log.info(f"  [{i}/{total}] Score: {old_score:.2f} → {new_score:.2f}")
                     p1_enriched += 1
                     p1_touched_ids.append(row_id)
-                except Exception:
+                except Exception as exc:
+                    log.error(f"  DB write failed for id={row_id}: {type(exc).__name__}: {exc}")
                     p1_ai_fail += 1
+                    errors_by_type["db_write"] += 1
 
-    # ── Pass 2: deep link extraction ─────────────────────────
     p2_candidates  = 0
     p2_improved    = 0
     p2_touched_ids = []
@@ -722,7 +726,7 @@ def main(
                   AND (
                     application_url_verified = 0
                     OR application_url_verified IS NULL
-                    OR (deadline IS NULL AND (rolling IS NULL OR rolling = 0))
+                    OR (deadline IS NULL AND (rolling IS NULL OR rolling = FALSE))
                   )
                 ORDER BY data_quality_score DESC
             """)).mappings().fetchall()
@@ -778,7 +782,8 @@ def main(
     still_incomplete = _run_pass3(all_touched, min_score) or []
     log.info(f"  Recalculated scores for {len(all_touched)} touched rows")
 
-    # ── Final summary ─────────────────────────────────────────
+    total_errors = sum(errors_by_type.values())
+
     print(f"\n{'='*60}")
     print(f"ENRICHMENT COMPLETE")
     print(f"{'='*60}")
@@ -790,6 +795,21 @@ def main(
     print(f"  Improved by Pass 2:      {p2_improved}")
     print(f"  Still incomplete:        {len(still_incomplete)}")
     print(f"Pass 3 — scores refreshed: {len(all_touched)}")
+
+    if total_errors > 0:
+        print(f"\n{'─'*60}")
+        print(f"ERROR BREAKDOWN ({total_errors} total)")
+        print(f"{'─'*60}")
+        labels = {
+            "no_text":    "No scraped text found",
+            "ai_timeout": "Azure AI timeout",
+            "json_parse": "AI returned invalid JSON",
+            "db_write":   "Database write failed",
+            "other":      "Other / unexpected",
+        }
+        for key, count in errors_by_type.items():
+            if count > 0:
+                print(f"  {labels[key]:<28} {count}")
 
     if not dry_run and p1_enriched > 0:
         db = database.SessionLocal()

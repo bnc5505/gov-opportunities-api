@@ -581,7 +581,7 @@ def main(dry_run=False, limit=None, skip_fetch=False, skip_ai=False):
         try:
             total       = db.execute(text("SELECT COUNT(*) FROM scraped_grants")).scalar()
             with_dl     = db.execute(text("SELECT COUNT(*) FROM scraped_grants WHERE deadline IS NOT NULL")).scalar()
-            rolling_cnt = db.execute(text("SELECT COUNT(*) FROM scraped_grants WHERE rolling = 1 AND deadline IS NULL")).scalar()
+            rolling_cnt = db.execute(text("SELECT COUNT(*) FROM scraped_grants WHERE rolling = TRUE AND deadline IS NULL")).scalar()
             print(f"\nDB state after run:")
             print(f"  Total grants:        {total}")
             print(f"  Have deadline:       {with_dl}")

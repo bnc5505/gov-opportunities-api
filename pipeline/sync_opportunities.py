@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 sync_opportunities.py
 
@@ -6,21 +7,21 @@ Reads live-ready rows from scraped_grants and upserts them into the
 opportunities table using opportunity_key as the dedup anchor.
 
 Live-ready criteria:
-  - title present
-  - application_url present
-  - deadline IS NOT NULL OR rolling = 1
-  - data_quality_score >= MIN_SCORE (default 0.4)
-  - status in (active, rolling, expiring_soon, recently_closed, unverified)
+- title present
+- application_url present
+- deadline IS NOT NULL OR rolling = TRUE
+- data_quality_score >= MIN_SCORE (default 0.4)
+- status in (active, rolling, expiring_soon, recently_closed, unverified)
 
 Upsert:
-  - opportunity_key = sha256(state_code + "|" + opportunity_url)  [fallback: application_url]
-  - If key exists → UPDATE + last_synced_at
-  - If new        → INSERT
+- opportunity_key = sha256(state_code + "|" + opportunity_url)  [fallback: application_url]
+- If key exists → UPDATE + last_synced_at
+- If new        → INSERT
 
 Review queue:
-  - data_quality_score < 0.6 → queued for review
-  - needs_review = True      → queued for review
-  - Existing PENDING entries are not duplicated
+- data_quality_score < 0.6 → queued for review
+- needs_review = True      → queued for review
+- Existing PENDING entries are not duplicated
 
 Run from project root:
     python sync_opportunities.py [--dry-run] [--min-score 0.4]
@@ -28,6 +29,7 @@ Run from project root:
 
 import sys
 import os
+import re
 import json
 import hashlib
 import argparse
@@ -39,6 +41,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent   # pipeline/../ = project
 APP_DIR      = PROJECT_ROOT / "app"
 
 sys.path.insert(0, str(APP_DIR))
+sys.path.insert(0, str(PROJECT_ROOT))
 os.chdir(str(APP_DIR))
 
 from dotenv import load_dotenv
@@ -46,8 +49,12 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 import database
 from sqlalchemy import text
-
-sys.path.insert(0, str(PROJECT_ROOT))
+from pipeline.constants import (
+    MIN_SCORE,
+    HIGH_SCORE,
+    REVIEW_BELOW,
+    MIN_AWARD_THRESHOLD,
+)
 from pipeline.agency_logos import get_logo_url as _get_logo_url
 
 
@@ -79,7 +86,7 @@ def expire_stale_grants() -> int:
             WHERE status = 'active'
               AND deadline IS NOT NULL
               AND deadline < :today
-              AND (rolling IS NULL OR rolling = 0)
+              AND (rolling IS NULL OR rolling = FALSE)
         """), {"today": today, "now": datetime.utcnow().isoformat()})
         conn.commit()
         return result.rowcount
@@ -92,10 +99,8 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-MIN_SCORE      = 0.50   # base minimum score
-HIGH_SCORE     = 0.70   # grants above this go live regardless of award size
-MIN_AWARD      = 5000   # grants below HIGH_SCORE need at least this award_min to go live
-REVIEW_BELOW   = 0.70   # flag for human review below this score
+# MIN_SCORE, HIGH_SCORE, REVIEW_BELOW imported from pipeline.constants
+MIN_AWARD = MIN_AWARD_THRESHOLD  # local alias — keeps is_live_ready readable
 
 # only push grants that are currently open or rolling
 LIVE_STATUSES = {"active", "rolling", "expiring_soon"}
@@ -140,6 +145,8 @@ SOURCE_NAME_MAP = {
     "ny_ocfs_grants_raw.json":     "NY Office of Children & Family Services",
     "ny_nysed_grants_raw.json":    "NY State Education Dept Grants",
     "ny_homes_grants_raw.json":    "NY Homes & Community Renewal",
+    # PA Grants Search
+    "pa_grants_search_raw.json":   "PA Grants Search",
 }
 SOURCE_URLS = {
     # Pennsylvania
@@ -172,6 +179,8 @@ SOURCE_URLS = {
     "ny_ocfs_grants_raw.json":     "https://ocfs.ny.gov/main/grants/",
     "ny_nysed_grants_raw.json":    "https://www.nysed.gov/grants",
     "ny_homes_grants_raw.json":    "https://hcr.ny.gov/funding-opportunities",
+    # PA Grants Search
+    "pa_grants_search_raw.json":   "https://www.pa.gov/en/grants/search/",
 }
 
 
@@ -181,8 +190,15 @@ def make_key(state_code: str, opportunity_url: str, application_url: str = "") -
     Multiple grants often share a single generic application portal URL,
     so application_url alone is not a reliable unique key.
     Falls back to application_url if opportunity_url is absent.
+    Raises ValueError if both URLs are empty — prevents silent dedup collisions.
     """
-    anchor = (opportunity_url or application_url or "").lower().rstrip("/")
+    anchor = (opportunity_url or application_url or "").strip().lower().rstrip("/")
+    if not anchor:
+        raise ValueError(
+            "make_key requires at least one non-empty URL "
+            f"(state={state_code!r}, opportunity_url={opportunity_url!r}, "
+            f"application_url={application_url!r})"
+        )
     raw = f"{state_code.lower()}|{anchor}"
     return hashlib.sha256(raw.encode()).hexdigest()[:64]
 
@@ -190,10 +206,31 @@ def make_key(state_code: str, opportunity_url: str, application_url: str = "") -
 def parse_deadline(dl_str):
     if not dl_str:
         return None
-    for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y"):
+    dl_str = dl_str.strip()
+    # Ordered from most-specific to least: try exact strptime formats first,
+    # then fall back to dateutil for long-form strings like "June 30, 2026".
+    for fmt in (
+        "%m/%d/%Y",   # 06/30/2026
+        "%Y-%m-%d",   # 2026-06-30
+        "%m-%d-%Y",   # 06-30-2026
+        "%B %d, %Y",  # June 30, 2026
+        "%b %d, %Y",  # Jun 30, 2026
+        "%d %B %Y",   # 30 June 2026
+        "%d %b %Y",   # 30 Jun 2026
+    ):
         try:
-            return datetime.strptime(dl_str.strip(), fmt).isoformat()
+            return datetime.strptime(dl_str, fmt).isoformat()
         except ValueError:
+            pass
+    # dateutil fallback — handles remaining regional/abbreviation variants.
+    # Only applied when a 4-digit year is present; without one dateutil would
+    # silently infer the current year from a bare "06/30"-style string.
+    if re.search(r"\b\d{4}\b", dl_str):
+        try:
+            from dateutil import parser as _dateutil_parser
+            dt = _dateutil_parser.parse(dl_str, fuzzy=False)
+            return dt.isoformat()
+        except Exception:
             pass
     return None
 
@@ -259,14 +296,30 @@ def get_or_create_source(conn, source_file: str) -> int:
         code = source_file.split("_")[0].upper()
         sid  = get_state_id(conn, code) if len(code) == 2 else None
         now = datetime.utcnow().isoformat()
-        conn.execute(text("""
-            INSERT INTO sources (name, url, state_id, scraper_type, scrape_frequency_hours,
-                                 is_active, created_at, updated_at)
-            VALUES (:name, :url, :sid, 'scraper', 24, 1, :now, :now)
-        """), {"name": name, "url": url, "sid": sid, "now": now})
+        # Use savepoint so a failed INSERT doesn't abort the whole transaction
+        try:
+            conn.execute(text("SAVEPOINT create_source"))
+            conn.execute(text("""
+                INSERT INTO sources (name, url, state_id, scraper_type, scrape_frequency_hours,
+                                    is_active, created_at, updated_at)
+                VALUES (:name, :url, :sid, 'scraper', 24, TRUE, :now, :now)
+            """), {"name": name, "url": url, "sid": sid, "now": now})
+            conn.execute(text("RELEASE SAVEPOINT create_source"))
+        except Exception as exc:
+            conn.execute(text("ROLLBACK TO SAVEPOINT create_source"))
+            # Source might already exist (race condition or duplicate) — try to fetch it
+            row2 = conn.execute(
+                text("SELECT id FROM sources WHERE name = :n OR url = :u"), {"n": name, "u": url}
+            ).fetchone()
+            if row2:
+                _source_cache[source_file] = row2[0]
+                return _source_cache[source_file]
+            raise RuntimeError(f"Failed to create or find source: {name}") from exc
         row2 = conn.execute(
             text("SELECT id FROM sources WHERE name = :n"), {"n": name}
         ).fetchone()
+        if row2 is None:
+            raise RuntimeError(f"Could not find source after insert: '{source_file}'")
         _source_cache[source_file] = row2[0]
     return _source_cache[source_file]
 
@@ -313,14 +366,14 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
         otype      = "grant",
         source_id  = source_id,
         state_id   = state_id,
-        elig_org   = 1,
-        elig_ind   = 1 if row.get("eligibility_individual") else 0,
+        elig_org   = True,
+        elig_ind   = bool(row.get("eligibility_individual")),
         elig_desc  = row["eligibility_notes"],
         award_min  = row["award_min"],
         award_max  = row["award_max"],
         total_f    = row["total_funding"],
         deadline   = deadline,
-        rolling    = 1 if row["rolling"] else 0,
+        rolling    = bool(row["rolling"]),
         opp_url    = (row["opportunity_url"] or "")[:1000] or None,
         app_url    = app_url[:1000] or None,
         c_name     = (row["contact_name"]  or "")[:255] or None,
@@ -330,7 +383,7 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
         industry   = (row["industry"] or "")[:255] or None,
         status     = status,
         score      = row["data_quality_score"],
-        needs_rev  = 1 if row["needs_review"] else 0,
+        needs_rev  = bool(row["needs_review"]),
         synced_at  = datetime.utcnow().isoformat(),
         logo_url   = row.get("logo_url") or _get_logo_url(opp_url or app_url),
     )
@@ -420,7 +473,7 @@ def upsert_opportunity(conn, row, dry_run: bool) -> tuple:
                 reasons.append("scraper_flagged")
             conn.execute(text("""
                 INSERT INTO review_queue (opportunity_id, reason, review_status, created_at)
-                VALUES (:oid, :reason, 'pending', datetime('now'))
+                VALUES (:oid, :reason, 'pending', NOW())
             """), {"oid": opp_id, "reason": "; ".join(reasons)})
             queued = True
 
@@ -480,14 +533,21 @@ def main(dry_run=False, min_score=MIN_SCORE):
         finally:
             row_db.close()
 
+    inserted  = stats.get("inserted", 0)
+    updated   = stats.get("updated", 0)
+    unchanged = stats.get("unchanged", 0)
+    errors    = stats["errors"]
+
     print(f"\n{'='*60}")
     print(f"SYNC COMPLETE{'  [DRY-RUN]' if dry_run else ''}")
     print(f"{'='*60}")
-    print(f"  Inserted:           {stats.get('inserted', 0)}")
-    print(f"  Updated:            {stats.get('updated', 0)}")
-    print(f"  Errors:             {stats['errors']}")
+    print(f"Total processed:      {inserted + updated + unchanged + errors}")
+    print(f"  Inserted:           {inserted}")
+    print(f"  Updated:            {updated}")
+    print(f"  Unchanged:          {unchanged}")
+    print(f"  Errors:             {errors}")
     print(f"  Queued for review:  {stats['queued']}")
-    print(f"  Blocked grants:     {blocked}  (no deadline + not rolling)")
+    print(f"  Blocked grants:     {blocked}  (below score threshold or missing deadline)")
 
     if not dry_run:
         db2 = database.SessionLocal()

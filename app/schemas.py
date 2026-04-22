@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List, Any, Dict
+from typing import Literal, Optional, List, Any, Dict
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
@@ -363,10 +363,37 @@ class ScrapeLogResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class OpportunityFilters(BaseModel):
+    """
+    Pydantic model for GET /opportunities query parameters.
+    FastAPI injects each field from the query string via Depends().
+    Constraints here produce 422 responses for invalid inputs.
+    """
+    model_config = ConfigDict(extra="ignore")
+
+    q:                       Optional[str]   = None
+    opportunity_type:        Optional[str]   = None
+    status:                  Optional[str]   = None
+    state_code:              Optional[str]   = Field(
+        None, min_length=2, max_length=2,
+        description="2-letter state code (e.g. PA, NY). Case-insensitive."
+    )
+    rolling:                 Optional[bool]  = None
+    industry:                Optional[str]   = None
+    agency_id:               Optional[int]   = None
+    award_min:               Optional[float] = Field(None, ge=0, description="Return grants whose award_max >= this value")
+    award_max:               Optional[float] = Field(None, ge=0, description="Return grants whose award_min <= this value")
+    deadline_after:          Optional[datetime] = None
+    deadline_before:         Optional[datetime] = None
+    eligibility_individual:  Optional[bool]  = None
+    eligibility_organization: Optional[bool] = None
+    needs_review:            Optional[bool]  = None
+
+
 class PaginatedOpportunityResponse(BaseModel):
     total: int
     page: int
-    page_size: int
+    per_page: int
     total_pages: int
     data: List[OpportunityListItem]
 
