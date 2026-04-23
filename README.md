@@ -237,7 +237,7 @@ curl http://localhost:8000/opportunities \
 
 Full API documentation: http://localhost:8000/docs
 
-## Performance
+##  Performance
 
 - **API Response**: <100ms (typical)
 - **Test Suite**: 162 tests in ~2s
@@ -266,9 +266,7 @@ uvicorn main:app --reload --port 8000
 uvicorn main:app --reload --log-level debug
 ```
 
-## License
 
-[Your License Here]
 
 ## Acknowledgments
 
@@ -285,4 +283,4 @@ For issues or questions:
 
 ---
 
-**Built for improving access to government funding opportunities**
+
