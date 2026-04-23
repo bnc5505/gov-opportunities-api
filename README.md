@@ -2,14 +2,14 @@
 
 A production-ready API for discovering government grant opportunities across Pennsylvania, New York, Maryland, and DC. Features automated web scraping, AI-powered data enrichment, quality scoring, and RESTful access to 288+ verified grant opportunities.
 
-- 🎯 288 verified grant opportunities
-- 🗺️ 4 states (PA, NY, MD, DC)
-- ✅ 97% active grants
-- 🧪 162 tests passing
-- 🔒 JWT authentication ready
-- ⚡ Sub-2s test execution
+- 288 verified grant opportunities
+- 4 states (PA, NY, MD, DC)
+- 97% active grants
+- 162 tests passing
+- JWT authentication ready
+- Sub-2s test execution
 
-## ✨ Features
+## Features
 
 - **Multi-State Coverage**: Automated scrapers for 20+ government grant portals
 - **AI Enrichment**: Azure OpenAI extracts structured data from unstructured sources
@@ -20,7 +20,7 @@ A production-ready API for discovering government grant opportunities across Pen
 - **Production Database**: Azure PostgreSQL with Alembic migrations
 - **Security**: JWT authentication, input validation, rate limiting (100/min)
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Backend**: FastAPI (Python 3.9+)
 - **Database**: PostgreSQL 12+ (Azure PostgreSQL in production)
@@ -30,14 +30,14 @@ A production-ready API for discovering government grant opportunities across Pen
 - **Authentication**: JWT (python-jose)
 - **Rate Limiting**: SlowAPI
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Python 3.9 or higher
 - PostgreSQL 12+ (local or Azure)
 - Azure OpenAI API key (for enrichment pipeline)
 - Git
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone and Setup
 
@@ -99,7 +99,7 @@ curl http://localhost:8000/opportunities?state_code=PA
 curl http://localhost:8000/opportunities?award_min=50000
 ```
 
-## 📊 Running the Data Pipeline
+## Running the Data Pipeline
 
 ### Manual Run
 
@@ -130,7 +130,7 @@ python pipeline/enrich_scraped_grants.py
 python pipeline/sync_opportunities.py
 ```
 
-## 🧪 Running Tests
+## Running Tests
 
 ```bash
 # Run all tests
@@ -146,7 +146,7 @@ pytest tests/test_api.py -v
 pytest -m "not slow"
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 gov-opportunities-api/
@@ -184,7 +184,7 @@ gov-opportunities-api/
 └── README.md
 ```
 
-## ⚙️ Environment Variables
+## Environment Variables
 
 | Variable | Required | Description | Default |
 |----------|----------|-------------|---------|
@@ -200,7 +200,7 @@ gov-opportunities-api/
 
 *Required for enrichment pipeline only
 
-## 🔐 Authentication
+## Authentication
 
 ### Get JWT Token
 
@@ -222,7 +222,7 @@ curl http://localhost:8000/opportunities \
 
 **Note**: Authentication is currently optional for read endpoints (configured for demo access).
 
-## 🛣️ API Endpoints
+## API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -237,7 +237,7 @@ curl http://localhost:8000/opportunities \
 
 Full API documentation: http://localhost:8000/docs
 
-## 📈 Performance
+## Performance
 
 - **API Response**: <100ms (typical)
 - **Test Suite**: 162 tests in ~2s
@@ -245,7 +245,7 @@ Full API documentation: http://localhost:8000/docs
 - **Database Size**: 288 opportunities, ~17 tables
 - **Cost Optimization**: 80% reduction via content caching
 
-## 🤝 Contributing
+## Contributing
 
 ### Adding a New State Scraper
 
@@ -266,17 +266,17 @@ uvicorn main:app --reload --port 8000
 uvicorn main:app --reload --log-level debug
 ```
 
-## 📄 License
+## License
 
 [Your License Here]
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - State grant portals for open data access
 - Azure OpenAI for data enrichment
 - FastAPI framework
 
-## 📞 Support
+## Support
 
 For issues or questions:
 - Check `/docs` for API documentation
@@ -285,4 +285,4 @@ For issues or questions:
 
 ---
 
-**Built with ❤️ for improving access to government funding opportunities**
+**Built for improving access to government funding opportunities**

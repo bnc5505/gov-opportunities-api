@@ -213,7 +213,7 @@ def build_grant(item: Dict, page: Optional[Dict]) -> Dict:
 
     # Most grants on this portal have no due date — treat as rolling
     if not deadline and not due:
-        is_rolling = True
+        is_rolling = True11
 
     # Best amount
     ha = page.get("html_amount", {}) if page else {}
